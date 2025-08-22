@@ -23,11 +23,11 @@ let appData = null;
 let appConfig = {};
 
 // Waveapp spec handlers
-app.get("/config", (c) => {
+app.get("/api/config", (c) => {
     return c.json(appConfig);
 });
 
-app.put("/config", async (c) => {
+app.put("/api/config", async (c) => {
     try {
         const newConfig = await c.req.json();
         appConfig = { ...appConfig, ...newConfig };
@@ -37,39 +37,31 @@ app.put("/config", async (c) => {
     }
 });
 
-app.get("/data", (c) => {
+app.get("/api/data", (c) => {
     return c.json(appData || {});
 });
 
-app.get("/describe", serveStatic({ path: "./describe.json" }));
+app.get("/api/describe", serveStatic({ path: "./describe.json" }));
 
 // JWT decode endpoint
 app.post("/api/decode", async (c) => {
-    console.log("JWT decode endpoint hit");
     try {
         const { token } = await c.req.json();
-        console.log("Received token:", token ? "present" : "missing");
 
         if (!token) {
-            console.log("No token provided");
             const errorData = { error: "Token is required" };
             appData = errorData;
             return c.json(errorData, 400);
         }
 
         // Try to verify to get detailed parsing errors from the library
-        console.log("Attempting JWT verify with dummy secret");
         try {
             jwt.verify(token, "dummy-secret", { ignoreExpiration: true, ignoreNotBefore: true });
-            console.log("JWT verify succeeded (unexpected)");
         } catch (verifyError) {
-            console.log("JWT verify error:", verifyError.name, verifyError.message);
             // If it's a signature error, that's expected - continue to decode
             if (verifyError.name === "JsonWebTokenError" && verifyError.message === "invalid signature") {
-                console.log("Expected signature error, continuing to decode");
                 // Token is structurally valid, just can't verify signature
             } else {
-                console.log("Real parsing error, returning error to client");
                 // This is a real parsing/format error from the library
                 const errorData = { error: verifyError.message };
                 appData = errorData;
@@ -78,9 +70,7 @@ app.post("/api/decode", async (c) => {
         }
 
         // Decode JWT since we know it's structurally valid
-        console.log("Attempting JWT decode");
         const decoded = jwt.decode(token, { complete: true });
-        console.log("JWT decode result:", decoded ? "success" : "null");
 
         const result = {
             header: decoded.header,
@@ -88,13 +78,11 @@ app.post("/api/decode", async (c) => {
             signature: decoded.signature,
         };
 
-        console.log("Storing result and returning");
         // Store the decoded data
         appData = result;
 
         return c.json(result);
     } catch (error) {
-        console.error("JWT decode error:", error);
         const errorData = { error: error.message || "Failed to decode JWT token" };
         appData = errorData;
         return c.json(errorData, 400);
