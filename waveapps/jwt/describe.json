@@ -1,0 +1,50 @@
+{
+    "name": "JWT Decoder",
+    "version": "1.0.0",
+    "baseurl": "/",
+    "description": "A simple JWT token decoder that parses and displays JWT header and payload information",
+    "actions": [
+        {
+            "name": "decode",
+            "method": "POST",
+            "path": "/api/decode",
+            "description": "Decode a JWT token and return header and payload",
+            "inputschema": "DecodeRequest",
+            "outputschema": "DecodeResponse"
+        }
+    ],
+    "schemas": {
+        "config": {
+            "type": "object",
+            "description": "Configuration for JWT decoder (currently empty)",
+            "properties": {}
+        },
+        "data": {
+            "type": "object",
+            "description": "Last decoded JWT token data or error",
+            "properties": {
+                "header": { "type": "object", "description": "JWT header" },
+                "payload": { "type": "object", "description": "JWT payload" },
+                "signature": { "type": "string", "description": "JWT signature (base64url encoded)" },
+                "error": { "type": "string", "description": "Error message if decoding failed" }
+            }
+        },
+        "DecodeRequest": {
+            "type": "object",
+            "description": "Request to decode a JWT token",
+            "properties": {
+                "token": { "type": "string", "description": "JWT token to decode" }
+            },
+            "required": ["token"]
+        },
+        "DecodeResponse": {
+            "type": "object",
+            "description": "Decoded JWT token response",
+            "properties": {
+                "header": { "type": "object", "description": "JWT header" },
+                "payload": { "type": "object", "description": "JWT payload" },
+                "signature": { "type": "string", "description": "JWT signature (base64url encoded)" }
+            }
+        }
+    }
+}
