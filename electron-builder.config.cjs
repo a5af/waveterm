@@ -22,7 +22,7 @@ const config = {
         {
             from: "./dist",
             to: "./dist",
-            filter: ["**/*", "!bin/*", "bin/wavesrv.${arch}*", "bin/wsh*"],
+            filter: ["**/*", "!bin/*", "!eb-bin/*", "bin/wsh*"],
         },
         {
             from: ".",
@@ -49,10 +49,13 @@ const config = {
                 arch: ["universal", "arm64", "x64"],
             },
         ],
+        files: [
+            // put per-arch wavesrv into the asar tree at dist/bin/wavesrv
+            { from: "dist/eb-bin/wavesrv.${arch}", to: "dist/bin/wavesrv" },
+        ],
         category: "public.app-category.developer-tools",
         minimumSystemVersion: "10.15.0",
         mergeASARs: true,
-        singleArchFiles: "**/dist/bin/wavesrv.*",
         entitlements: "build/entitlements.mac.plist",
         entitlementsInherit: "build/entitlements.mac.plist",
         extendInfo: {
@@ -70,6 +73,7 @@ const config = {
         },
     },
     linux: {
+        files: [{ from: "dist/bin/wavesrv", to: "dist/bin/wavesrv" }],
         artifactName: "${name}-${platform}-${arch}-${version}.${ext}",
         category: "TerminalEmulator",
         executableName: pkg.name,
@@ -90,6 +94,7 @@ const config = {
         afterInstall: "build/deb-postinstall.tpl",
     },
     win: {
+        files: [{ from: "dist/bin/wavesrv.exe", to: "dist/bin/wavesrv.exe" }],
         target: ["nsis", "msi", "zip"],
         signtoolOptions: windowsShouldSign && {
             signingHashAlgorithms: ["sha256"],

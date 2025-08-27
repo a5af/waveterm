@@ -156,15 +156,14 @@ function getElectronAppUnpackedBasePath(): string {
     return getElectronAppBasePath().replace("app.asar", "app.asar.unpacked");
 }
 
-const wavesrvBinName = `wavesrv.${unameArch}`;
+const wavesrvBinName = `wavesrv`;
 
 function getWaveSrvPath(): string {
+    let fullName = wavesrvBinName;
     if (process.platform === "win32") {
-        const winBinName = `${wavesrvBinName}.exe`;
-        const appPath = path.join(getElectronAppUnpackedBasePath(), "bin", winBinName);
-        return `${appPath}`;
+        fullName = `${fullName}.exe`;
     }
-    return path.join(getElectronAppUnpackedBasePath(), "bin", wavesrvBinName);
+    return path.join(getElectronAppUnpackedBasePath(), "bin", fullName);
 }
 
 function getWaveSrvCwd(): string {
