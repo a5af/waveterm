@@ -48,6 +48,7 @@ export class WaveTabView extends WebContentsView {
     isDestroyed: boolean = false;
     keyboardChordMode: boolean = false;
     resetChordModeTimeout: NodeJS.Timeout = null;
+    focusedBlock: FocusedBlockType | null = null;
 
     constructor(fullConfig: FullConfigType) {
         console.log("createBareTabView");

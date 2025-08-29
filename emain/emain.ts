@@ -402,6 +402,14 @@ electron.ipcMain.on("fe-log", (event, logStr: string) => {
     console.log("fe-log", logStr);
 });
 
+electron.ipcMain.on("set-focused-block", (event, tabId: string, focusedBlock: FocusedBlockType | null) => {
+    const tabView = getWaveTabViewByWebContentsId(event.sender.id);
+    if (tabView == null) {
+        return;
+    }
+    tabView.focusedBlock = focusedBlock;
+});
+
 function saveImageFileWithNativeDialog(defaultFileName: string, mimeType: string, readStream: Readable) {
     if (defaultFileName == null || defaultFileName == "") {
         defaultFileName = "image";

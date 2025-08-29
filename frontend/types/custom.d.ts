@@ -60,6 +60,11 @@ declare global {
         activate: boolean;
     };
 
+    type FocusedBlockType = {
+        blockid: string;
+        view: string;
+    };
+
     type ElectronApi = {
         getAuthKey(): string;
         getIsDev(): boolean;
@@ -103,6 +108,7 @@ declare global {
         openNativePath(filePath: string): void;
         captureScreenshot(rect: Electron.Rectangle): Promise<string>;
         setKeyboardChordMode: () => void;
+        setFocusedBlock: (tabId: string, focusedBlock: FocusedBlockType | null) => void;
     };
 
     type ElectronContextMenuItem = {
