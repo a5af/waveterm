@@ -53,7 +53,7 @@ contextBridge.exposeInMainWorld("api", {
     openNativePath: (filePath: string) => ipcRenderer.send("open-native-path", filePath),
     captureScreenshot: (rect: Rectangle) => ipcRenderer.invoke("capture-screenshot", rect),
     setKeyboardChordMode: () => ipcRenderer.send("set-keyboard-chord-mode"),
-    setFocusedBlock: (tabId: string, focusedBlock: FocusedBlockType | null) => ipcRenderer.send("set-focused-block", tabId, focusedBlock),
+    setFocusedBlockInElectronTab: (tabId: string, focusedBlock: FocusedBlockType | null) => ipcRenderer.send("set-focused-block", tabId, focusedBlock),
 });
 
 // Custom event for "new-window"

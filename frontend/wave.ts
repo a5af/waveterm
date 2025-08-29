@@ -30,6 +30,7 @@ import {
 import * as WOS from "@/store/wos";
 import { loadFonts } from "@/util/fontutil";
 import { setKeyUtilPlatform } from "@/util/keyutil";
+import { findNode } from "@/layout/lib/layoutNode";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -65,6 +66,37 @@ async function initBare() {
 }
 
 document.addEventListener("DOMContentLoaded", initBare);
+
+function handleNodeFocusChange(nodeId: string, layoutState: any, tabId: string) {
+    try {
+        const api = getApi();
+        if (!api?.setFocusedBlockInElectronTab) {
+            return;
+        }
+
+        const focusedNode = findNode(layoutState.rootNode, nodeId);
+        if (!focusedNode?.data?.blockId) {
+            api.setFocusedBlockInElectronTab(tabId, null);
+            return;
+        }
+
+        const blockId = focusedNode.data.blockId;
+        const blockAtom = WOS.getWaveObjectAtom<Block>(WOS.makeORef("block", blockId));
+        const blockData = globalStore.get(blockAtom);
+        if (!blockData || !blockData.meta?.view) {
+            return;
+        }
+        
+        const focusedBlockInfo: FocusedBlockType = {
+            blockid: blockId,
+            view: blockData.meta.view
+        };
+
+        api.setFocusedBlockInElectronTab(tabId, focusedBlockInfo);
+    } catch (error) {
+        console.warn("Failed to notify electron of focus change:", error);
+    }
+}
 
 async function initWaveWrap(initOpts: WaveInitOpts) {
     try {
@@ -198,5 +230,16 @@ async function initWave(initOpts: WaveInitOpts) {
     root.render(reactElem);
     await firstRenderPromise;
     console.log("Wave First Render Done");
+    
+    // Setup layout model focus callback for electron
+    const layoutModel = getLayoutModelForStaticTab();
+    layoutModel.onNodeFocus = (nodeId, layoutState) => handleNodeFocusChange(nodeId, layoutState, initOpts.tabId);
+    
+    // Set initial focused block
+    const currentFocusedNode = globalStore.get(layoutModel.focusedNode);
+    if (currentFocusedNode) {
+        handleNodeFocusChange(currentFocusedNode.id, layoutModel.treeState, initOpts.tabId);
+    }
+    
     getApi().setWindowInitStatus("wave-ready");
 }

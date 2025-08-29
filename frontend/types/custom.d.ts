@@ -108,7 +108,7 @@ declare global {
         openNativePath(filePath: string): void;
         captureScreenshot(rect: Electron.Rectangle): Promise<string>;
         setKeyboardChordMode: () => void;
-        setFocusedBlock: (tabId: string, focusedBlock: FocusedBlockType | null) => void;
+        setFocusedBlockInElectronTab: (tabId: string, focusedBlock: FocusedBlockType | null) => void;
     };
 
     type ElectronContextMenuItem = {

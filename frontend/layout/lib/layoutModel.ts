@@ -103,6 +103,10 @@ export class LayoutModel {
      */
     onNodeDelete?: (data: TabLayoutData) => Promise<void>;
     /**
+     * Callback that is invoked when a node gains focus.
+     */
+    onNodeFocus?: (nodeId: string, layoutState: LayoutTreeState) => void;
+    /**
      * The size of the gap between nodes in CSS pixels.
      */
     gapSizePx: PrimitiveAtom<number>;
@@ -1076,6 +1080,10 @@ export class LayoutModel {
         };
 
         this.treeReducer(action);
+        
+        if (this.onNodeFocus) {
+            this.onNodeFocus(nodeId, this.treeState);
+        }
     }
 
     focusFirstNode() {
