@@ -3,6 +3,7 @@ module github.com/wavetermdev/waveterm
 go 1.24.2
 
 require (
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/alexflint/go-filemutex v1.3.0
 	github.com/aws/aws-sdk-go-v2 v1.38.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.5

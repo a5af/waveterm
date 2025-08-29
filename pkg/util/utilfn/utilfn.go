@@ -30,6 +30,8 @@ import (
 	"text/template"
 	"time"
 	"unicode/utf8"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 var HexDigits = []byte{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'}
@@ -1074,4 +1076,24 @@ func DrainChannelSafe[T any](ch <-chan T, debugName string) {
 			}
 		}
 	}()
+}
+
+// SemverToComparableInt converts a semver string to a comparable integer
+// Formula: major * 1000000 + minor * 1000 + patch * 1
+// Returns 0 if the version is invalid or components exceed 999
+func SemverToComparableInt(version string) int {
+	v, err := semver.NewVersion(version)
+	if err != nil {
+		return 0
+	}
+	
+	major := int(v.Major())
+	minor := int(v.Minor())
+	patch := int(v.Patch())
+	
+	if major >= 1000 || minor >= 1000 || patch >= 1000 {
+		return 0
+	}
+	
+	return major*1000000 + minor*1000 + patch
 }

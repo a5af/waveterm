@@ -233,6 +233,9 @@ func RecordTEvent(ctx context.Context, tevent *telemetrydata.TEvent) error {
 	}
 	tevent.EnsureTimestamps()
 
+	// Set AppCVer (comparable version) for every event
+	tevent.Props.AppCVer = utilfn.SemverToComparableInt(wavebase.WaveVersion)
+
 	// Set AppFirstDay if within first day of TOS agreement
 	tosAgreedTs := GetTosAgreedTs()
 	if tosAgreedTs == 0 || (tosAgreedTs != 0 && time.Now().UnixMilli()-tosAgreedTs <= int64(24*60*60*1000)) {

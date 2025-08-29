@@ -72,6 +72,7 @@ type TEventProps struct {
 
 	AppFirstDay    bool `json:"app:firstday,omitempty"`
 	AppFirstLaunch bool `json:"app:firstlaunch,omitempty"`
+	AppCVer        int  `json:"app:cver,omitempty"`
 
 	ActionInitiator string `json:"action:initiator,omitempty" tstype:"\"keyboard\" | \"mouse\""`
 	PanicType       string `json:"debug:panictype,omitempty"`
