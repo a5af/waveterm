@@ -13,6 +13,7 @@ import { RpcApi } from "@/app/store/wshclientapi";
 import { initWshrpc, TabRpcClient } from "@/app/store/wshrpcutil";
 import { loadMonaco } from "@/app/view/codeeditor/codeeditor";
 import { getLayoutModelForStaticTab } from "@/layout/index";
+import { findNode } from "@/layout/lib/layoutNode";
 import {
     atoms,
     countersClear,
@@ -30,7 +31,6 @@ import {
 import * as WOS from "@/store/wos";
 import { loadFonts } from "@/util/fontutil";
 import { setKeyUtilPlatform } from "@/util/keyutil";
-import { findNode } from "@/layout/lib/layoutNode";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -67,29 +67,26 @@ async function initBare() {
 
 document.addEventListener("DOMContentLoaded", initBare);
 
-function handleNodeFocusChange(nodeId: string, layoutState: any, tabId: string) {
+async function handleNodeFocusChange(nodeId: string, layoutState: any, tabId: string) {
     try {
         const api = getApi();
-        if (!api?.setFocusedBlockInElectronTab) {
-            return;
-        }
-
         const focusedNode = findNode(layoutState.rootNode, nodeId);
         if (!focusedNode?.data?.blockId) {
+            console.log("handle-focus no blockid");
             api.setFocusedBlockInElectronTab(tabId, null);
             return;
         }
 
         const blockId = focusedNode.data.blockId;
-        const blockAtom = WOS.getWaveObjectAtom<Block>(WOS.makeORef("block", blockId));
-        const blockData = globalStore.get(blockAtom);
+        const blockData = await WOS.GetObject<Block>(WOS.makeORef("block", blockId));
         if (!blockData || !blockData.meta?.view) {
+            console.log("handle-focus no view", blockId, blockData);
             return;
         }
-        
+
         const focusedBlockInfo: FocusedBlockType = {
             blockid: blockId,
-            view: blockData.meta.view
+            view: blockData.meta.view,
         };
 
         api.setFocusedBlockInElectronTab(tabId, focusedBlockInfo);
@@ -230,16 +227,17 @@ async function initWave(initOpts: WaveInitOpts) {
     root.render(reactElem);
     await firstRenderPromise;
     console.log("Wave First Render Done");
-    
+
     // Setup layout model focus callback for electron
     const layoutModel = getLayoutModelForStaticTab();
     layoutModel.onNodeFocus = (nodeId, layoutState) => handleNodeFocusChange(nodeId, layoutState, initOpts.tabId);
-    
+
     // Set initial focused block
     const currentFocusedNode = globalStore.get(layoutModel.focusedNode);
+    console.log("handle-focus", currentFocusedNode);
     if (currentFocusedNode) {
         handleNodeFocusChange(currentFocusedNode.id, layoutModel.treeState, initOpts.tabId);
     }
-    
+
     getApi().setWindowInitStatus("wave-ready");
 }

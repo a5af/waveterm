@@ -408,6 +408,7 @@ electron.ipcMain.on("set-focused-block", (event, tabId: string, focusedBlock: Fo
         return;
     }
     tabView.focusedBlock = focusedBlock;
+    console.log("tabView focusedBlock", tabView.waveTabId, focusedBlock);
 });
 
 function saveImageFileWithNativeDialog(defaultFileName: string, mimeType: string, readStream: Readable) {

@@ -310,6 +310,7 @@ export {
     callBackendService,
     cleanWaveObjectCache,
     clearWaveObjectCache,
+    GetObject,
     getObjectValue,
     getWaveObjectAtom,
     getWaveObjectLoadingAtom,

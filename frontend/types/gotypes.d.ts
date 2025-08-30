@@ -833,10 +833,12 @@ declare global {
         "activity:openminutes"?: number;
         "app:firstday"?: boolean;
         "app:firstlaunch"?: boolean;
+        "app:cver"?: number;
         "action:initiator"?: "keyboard" | "mouse";
         "debug:panictype"?: string;
         "block:view"?: string;
         "ai:backendtype"?: string;
+        "ai:local"?: boolean;
         "wsh:cmd"?: string;
         "wsh:haderror"?: boolean;
         "conn:conntype"?: string;
