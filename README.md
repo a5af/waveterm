@@ -9,11 +9,47 @@
   <br/>
 </p>
 
-# Wave Terminal
+# Wave Terminal - Enhanced Fork
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwavetermdev%2Fwaveterm.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwavetermdev%2Fwaveterm?ref=badge_shield)
 
+> **🔱 This is an open fork of [Wave Terminal](https://github.com/wavetermdev/waveterm) with enhanced multi-instance support and improved user experience features.**
+>
+> **Upstream:** [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm) | **Fork:** [a5af/waveterm](https://github.com/a5af/waveterm)
+
 Wave is an open-source terminal that combines traditional terminal features with graphical capabilities like file previews, web browsing, and AI assistance. It runs on MacOS, Linux, and Windows.
+
+## 🎯 Fork-Specific Features
+
+This fork includes the following enhancements over the upstream Wave Terminal:
+
+### **Multi-Instance Support**
+- **Run multiple Wave instances simultaneously** using the `--instance` flag
+- Each instance has its own isolated data directory and database
+- Shared configuration settings across instances
+- Usage examples:
+  ```bash
+  Wave.exe --instance=test        # Creates waveterm-test data directory
+  Wave.exe --instance=v0.12.2     # Creates waveterm-v0.12.2 data directory
+  Wave.exe                        # Standard waveterm data directory
+  ```
+
+### **Enhanced Instance Management**
+- **Informative modal dialog** when attempting to launch without `--instance` flag while another instance is running
+- Clear error messages explaining multi-instance mode with usage examples
+- Prevents silent failures and accidental instance conflicts
+- "Learn More" button with direct link to documentation
+
+### **Improved Lock System**
+- Robust file lock implementation prevents data corruption
+- Separate lock files for each instance (`wave.lock`)
+- SQLite database isolation (no WAL file conflicts)
+- Graceful error handling with helpful user feedback
+
+### **Better Documentation**
+- Comprehensive JSDoc documentation for multi-instance architecture
+- Clear path isolation examples
+- Usage patterns and best practices
 
 Modern development involves constantly switching between terminals and browsers - checking documentation, previewing files, monitoring systems, and using AI tools. Wave brings these graphical tools directly into the terminal, letting you control them from the command line. This means you can stay in your terminal workflow while still having access to the visual interfaces you need.
 
@@ -60,6 +96,7 @@ Want to provide input to our future releases? Connect with us on [Discord](https
 
 ## Links
 
+### Upstream Wave Terminal
 - Homepage &mdash; https://www.waveterm.dev
 - Download Page &mdash; https://www.waveterm.dev/download
 - Documentation &mdash; https://docs.waveterm.dev
@@ -68,19 +105,33 @@ Want to provide input to our future releases? Connect with us on [Discord](https
 - X &mdash; https://x.com/wavetermdev
 - Discord Community &mdash; https://discord.gg/XfvZ334gwU
 
+### This Fork
+- Fork Repository &mdash; https://github.com/a5af/waveterm
+- Fork Issues &mdash; https://github.com/a5af/waveterm/issues
+- Upstream Repository &mdash; https://github.com/wavetermdev/waveterm
+
 ## Building from Source
 
 See [Building Wave Terminal](BUILD.md).
 
 ## Contributing
 
-Wave uses GitHub Issues for issue tracking.
+### Fork-Specific Issues
+For issues related to **multi-instance support** or **fork-specific features**, please use this fork's issue tracker:
+- **Fork Issues:** https://github.com/a5af/waveterm/issues
 
-Find more information in our [Contributions Guide](CONTRIBUTING.md), which includes:
+### Upstream Contributions
+For general Wave Terminal features and bugs, contribute to the upstream repository:
+- **Upstream Issues:** https://github.com/wavetermdev/waveterm/issues
+
+Find more information in the upstream [Contributions Guide](CONTRIBUTING.md), which includes:
 
 - [Ways to contribute](CONTRIBUTING.md#contributing-to-wave-terminal)
 - [Contribution guidelines](CONTRIBUTING.md#before-you-start)
 - [Storybook](https://docs.waveterm.dev/storybook)
+
+### Syncing with Upstream
+This fork regularly syncs with upstream Wave Terminal to incorporate new features and bug fixes. Fork-specific enhancements are maintained separately and can be merged or submitted upstream as appropriate.
 
 ## License
 

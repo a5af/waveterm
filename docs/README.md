@@ -2,6 +2,14 @@
 
 This is the home for Wave Terminal's documentation site. This README is specifically about _building_ and contributing to the docs site. If you are looking for the actual hosted docs, go here -- https://docs.waveterm.dev
 
+## Fork-Specific Documentation
+
+This is an enhanced fork of Wave Terminal. For documentation about fork-specific features (multi-instance support, enhanced lock system, etc.), see:
+- **[FORK.md](../FORK.md)** - Detailed fork feature documentation
+- **[README.md](../README.md)** - Fork overview and quick start
+
+**Upstream Documentation:** https://docs.waveterm.dev
+
 ### Installation
 
 Our docs are built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
