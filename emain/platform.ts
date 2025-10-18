@@ -27,7 +27,24 @@ if (isDevVite) {
     process.env[WaveDevViteVarName] = "1";
 }
 
-// Parse CLI arguments for multi-instance support (must be done early, before paths are set)
+/**
+ * Parse CLI arguments for multi-instance support (must be done early, before paths are set).
+ *
+ * Multi-instance mode allows multiple Wave instances to run simultaneously by providing
+ * isolated data directories for each instance while sharing configuration settings.
+ *
+ * Usage:
+ *   Wave.exe --instance=test        → Data dir: waveterm-test/Data
+ *   Wave.exe --instance=v0.12.2     → Data dir: waveterm-v0.12.2/Data
+ *   Wave.exe (no flag)              → Data dir: waveterm/Data
+ *
+ * Each instance gets:
+ *   - Isolated data directory (with its own wave.lock file)
+ *   - Isolated SQLite databases
+ *   - Shared config directory (inherits settings from main install)
+ *
+ * @returns The instance ID if --instance flag is present, null otherwise
+ */
 function parseInstanceId(): string | null {
     const args = process.argv.slice(1);
     for (let i = 0; i < args.length; i++) {
