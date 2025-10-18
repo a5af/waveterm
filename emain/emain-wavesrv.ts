@@ -24,6 +24,7 @@ let isWaveSrvDead = false;
 let waveSrvProc: child_process.ChildProcessWithoutNullStreams | null = null;
 let WaveVersion = "unknown"; // set by WAVESRV-ESTART
 let WaveBuildTime = 0; // set by WAVESRV-ESTART
+let waveSrvLockError = false; // set when wavesrv fails to acquire lock
 
 export function getWaveVersion(): { version: string; buildTime: number } {
     return { version: WaveVersion, buildTime: WaveBuildTime };
@@ -44,6 +45,42 @@ export function getWaveSrvProc(): child_process.ChildProcessWithoutNullStreams |
 
 export function getIsWaveSrvDead(): boolean {
     return isWaveSrvDead;
+}
+
+export function getWaveSrvLockError(): boolean {
+    return waveSrvLockError;
+}
+
+export async function showMultiInstanceDialog(): Promise<void> {
+    try {
+        await electron.app.whenReady();
+        const { dialog, shell } = electron;
+        const dialogOpts: Electron.MessageBoxOptions = {
+            type: "info",
+            buttons: ["Close", "Learn More"],
+            defaultId: 0,
+            cancelId: 0,
+            title: "Wave is Already Running",
+            message: "Another instance of Wave is already running.",
+            detail:
+                "Wave is already running on this system. To run multiple instances simultaneously, " +
+                "launch Wave with the --instance flag:\n\n" +
+                "Example:\n" +
+                "  Wave.exe --instance=test\n" +
+                "  Wave.exe --instance=v0.12.2\n\n" +
+                "Each instance will have its own isolated data while sharing your settings.\n\n" +
+                "Click 'Learn More' for documentation on multi-instance mode.",
+            noLink: true,
+        };
+
+        const choice = dialog.showMessageBoxSync(dialogOpts);
+        if (choice === 1) {
+            // Learn More button
+            await shell.openExternal("https://docs.waveterm.dev/");
+        }
+    } catch (e) {
+        console.log("error showing multi-instance dialog:", e);
+    }
 }
 
 export function runWaveSrv(handleWSEvent: (evtMsg: WSEventType) => void): Promise<boolean> {
@@ -72,11 +109,17 @@ export function runWaveSrv(handleWSEvent: (evtMsg: WSEventType) => void): Promis
         cwd: getWaveSrvCwd(),
         env: envCopy,
     });
-    proc.on("exit", (e) => {
+    proc.on("exit", async (e) => {
         if (updater?.status == "installing") {
             return;
         }
         console.log("wavesrv exited, shutting down");
+
+        // If wavesrv failed due to lock conflict, show multi-instance dialog
+        if (waveSrvLockError) {
+            await showMultiInstanceDialog();
+        }
+
         setForceQuit(true);
         isWaveSrvDead = true;
         electron.app.quit();
@@ -127,6 +170,11 @@ export function runWaveSrv(handleWSEvent: (evtMsg: WSEventType) => void): Promis
                 console.log("error handling WAVESRV-EVENT", e);
             }
             return;
+        }
+        // Detect lock error from wavesrv
+        if (line.includes("error acquiring wave lock") || line.includes("lock already acquired")) {
+            console.log("wavesrv detected lock conflict:", line);
+            waveSrvLockError = true;
         }
         console.log(line);
     });

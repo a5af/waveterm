@@ -30,7 +30,14 @@ setWasActive,
 } from "./emain-activity";
 import { ensureHotSpareTab, getWaveTabViewByWebContentsId, setMaxTabCacheSize } from "./emain-tabview";
 import { handleCtrlShiftState } from "./emain-util";
-import { getIsWaveSrvDead, getWaveSrvProc, getWaveSrvReady, getWaveVersion, runWaveSrv } from "./emain-wavesrv";
+import {
+    getIsWaveSrvDead,
+    getWaveSrvProc,
+    getWaveSrvReady,
+    getWaveVersion,
+    runWaveSrv,
+    showMultiInstanceDialog,
+} from "./emain-wavesrv";
 import {
     createBrowserWindow,
     createNewWaveWindow,
@@ -689,38 +696,7 @@ async function appMain() {
         const instanceLock = electronApp.requestSingleInstanceLock();
         if (!instanceLock) {
             console.log("waveterm-app could not get single-instance-lock, another instance is running");
-
-            // Show dialog explaining multi-instance mode
-            try {
-                await electronApp.whenReady();
-                const { dialog, shell } = await import("electron");
-                const dialogOpts: Electron.MessageBoxOptions = {
-                    type: "info",
-                    buttons: ["Close", "Learn More"],
-                    defaultId: 0,
-                    cancelId: 0,
-                    title: "Wave is Already Running",
-                    message: "Another instance of Wave is already running.",
-                    detail:
-                        "Wave is already running on this system. To run multiple instances simultaneously, " +
-                        "launch Wave with the --instance flag:\n\n" +
-                        "Example:\n" +
-                        "  Wave.exe --instance=test\n" +
-                        "  Wave.exe --instance=v0.12.2\n\n" +
-                        "Each instance will have its own isolated data while sharing your settings.\n\n" +
-                        "Click 'Learn More' for documentation on multi-instance mode.",
-                    noLink: true,
-                };
-
-                const choice = dialog.showMessageBoxSync(dialogOpts);
-                if (choice === 1) {
-                    // Learn More button
-                    await shell.openExternal("https://docs.waveterm.dev/");
-                }
-            } catch (e) {
-                console.log("error showing multi-instance dialog:", e);
-            }
-
+            await showMultiInstanceDialog();
             electronApp.quit();
             return;
         }
