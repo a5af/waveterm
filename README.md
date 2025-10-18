@@ -23,20 +23,22 @@ Wave is an open-source terminal that combines traditional terminal features with
 
 This fork includes the following enhancements over the upstream Wave Terminal:
 
-### **Multi-Instance Support**
-- **Run multiple Wave instances simultaneously** using the `--instance` flag
-- Each instance has its own isolated data directory and database
+### **Multi-Instance Support (Default)**
+- **Multiple Wave instances run by default** - no flags needed!
+- Each instance automatically gets its own isolated data directory and database
 - Shared configuration settings across instances
 - Usage examples:
   ```bash
-  Wave.exe --instance=test        # Creates waveterm-test data directory
-  Wave.exe --instance=v0.12.2     # Creates waveterm-v0.12.2 data directory
-  Wave.exe                        # Standard waveterm data directory
+  Wave.exe                        # Auto multi-instance with generated ID
+  Wave.exe --instance=test        # Named multi-instance (waveterm-test data directory)
+  Wave.exe --instance=v0.12.2     # Named multi-instance (waveterm-v0.12.2 data directory)
+  Wave.exe --single-instance      # Enforce only one instance (traditional mode)
   ```
 
 ### **Enhanced Instance Management**
-- **Informative modal dialog** when attempting to launch without `--instance` flag while another instance is running
-- Clear error messages explaining multi-instance mode with usage examples
+- **Multi-instance by default** - launch multiple Wave windows instantly without configuration
+- **Optional single-instance mode** - use `--single-instance` flag to enforce one instance only
+- **Informative modal dialogs** explaining instance management with clear usage examples
 - Prevents silent failures and accidental instance conflicts
 - "Learn More" button with direct link to documentation
 

@@ -37,6 +37,7 @@ import {
     getWaveVersion,
     runWaveSrv,
     showMultiInstanceDialog,
+    showSingleInstanceDialog,
 } from "./emain-wavesrv";
 import {
     createBrowserWindow,
@@ -691,15 +692,16 @@ async function appMain() {
     const startTs = Date.now();
     const multiInstanceInfo = getMultiInstanceInfo();
 
-    // Only enforce single-instance lock if not in multi-instance mode
+    // Enforce single-instance lock only if --single-instance flag is used
     if (!multiInstanceInfo.isMultiInstance) {
         const instanceLock = electronApp.requestSingleInstanceLock();
         if (!instanceLock) {
             console.log("waveterm-app could not get single-instance-lock, another instance is running");
-            await showMultiInstanceDialog();
+            await showSingleInstanceDialog();
             electronApp.quit();
             return;
         }
+        console.log("waveterm-app running in single-instance mode");
     } else {
         console.log(`waveterm-app running in multi-instance mode (instance: ${multiInstanceInfo.instanceId})`);
     }

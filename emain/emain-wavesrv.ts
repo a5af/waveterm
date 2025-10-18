@@ -83,6 +83,37 @@ export async function showMultiInstanceDialog(): Promise<void> {
     }
 }
 
+export async function showSingleInstanceDialog(): Promise<void> {
+    try {
+        await electron.app.whenReady();
+        const { dialog, shell } = electron;
+        const dialogOpts: Electron.MessageBoxOptions = {
+            type: "info",
+            buttons: ["Close", "Learn More"],
+            defaultId: 0,
+            cancelId: 0,
+            title: "Wave is Already Running in Single-Instance Mode",
+            message: "Another instance of Wave is already running with --single-instance flag.",
+            detail:
+                "You launched Wave with the --single-instance flag, which prevents multiple instances.\n\n" +
+                "To run multiple instances, simply launch Wave without the --single-instance flag:\n\n" +
+                "  Wave.exe                     (auto multi-instance)\n" +
+                "  Wave.exe --instance=test     (named multi-instance)\n\n" +
+                "Each instance will have its own isolated data while sharing your settings.\n\n" +
+                "Click 'Learn More' for documentation on multi-instance mode.",
+            noLink: true,
+        };
+
+        const choice = dialog.showMessageBoxSync(dialogOpts);
+        if (choice === 1) {
+            // Learn More button
+            await shell.openExternal("https://docs.waveterm.dev/");
+        }
+    } catch (e) {
+        console.log("error showing single-instance dialog:", e);
+    }
+}
+
 export function runWaveSrv(handleWSEvent: (evtMsg: WSEventType) => void): Promise<boolean> {
     let pResolve: (value: boolean) => void;
     let pReject: (reason?: any) => void;

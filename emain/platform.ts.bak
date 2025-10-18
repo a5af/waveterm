@@ -324,7 +324,17 @@ async function callWithOriginalXdgCurrentDesktopAsync(callback: () => Promise<vo
  * @returns Object containing isMultiInstance flag and instanceId (null if not in multi-instance mode)
  */
 function getMultiInstanceInfo(): { isMultiInstance: boolean; instanceId: string | null } {
-    return { isMultiInstance, instanceId };
+    const args = process.argv.slice(1);
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--instance" && i + 1 < args.length) {
+            return { isMultiInstance: true, instanceId: args[i + 1] };
+        }
+        if (args[i].startsWith("--instance=")) {
+            const id = args[i].substring("--instance=".length);
+            return { isMultiInstance: true, instanceId: id };
+        }
+    }
+    return { isMultiInstance: false, instanceId: null };
 }
 
 export {
