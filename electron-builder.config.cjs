@@ -19,17 +19,9 @@ const config = {
     nodeGypRebuild: false,
     electronCompile: false,
     files: [
-        {
-            from: "./dist",
-            to: "./dist",
-            filter: ["**/*", "!bin/*", "bin/wavesrv.${arch}*", "bin/wsh*"],
-        },
-        {
-            from: ".",
-            to: ".",
-            filter: ["package.json"],
-        },
-        "!node_modules", // We don't need electron-builder to package in Node modules as Vite has already bundled any code that our program is using.
+        "!**/*", // Start with excluding everything (override electron-builder defaults)
+        "dist/**/*", // Include all dist files explicitly (including bin for asarUnpack)
+        "package.json", // Include package.json
     ],
     directories: {
         output: "make",
