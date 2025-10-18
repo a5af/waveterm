@@ -52,6 +52,7 @@ import {
     checkIfRunningUnderARM64Translation,
     getElectronAppBasePath,
     getElectronAppUnpackedBasePath,
+    getMultiInstanceInfo,
     getWaveConfigDir,
     getWaveDataDir,
     isDev,
@@ -681,11 +682,18 @@ async function appMain() {
         electronApp.disableHardwareAcceleration();
     }
     const startTs = Date.now();
-    const instanceLock = electronApp.requestSingleInstanceLock();
-    if (!instanceLock) {
-        console.log("waveterm-app could not get single-instance-lock, shutting down");
-        electronApp.quit();
-        return;
+    const multiInstanceInfo = getMultiInstanceInfo();
+
+    // Only enforce single-instance lock if not in multi-instance mode
+    if (!multiInstanceInfo.isMultiInstance) {
+        const instanceLock = electronApp.requestSingleInstanceLock();
+        if (!instanceLock) {
+            console.log("waveterm-app could not get single-instance-lock, shutting down");
+            electronApp.quit();
+            return;
+        }
+    } else {
+        console.log(`waveterm-app running in multi-instance mode (instance: ${multiInstanceInfo.instanceId})`);
     }
     try {
         await runWaveSrv(handleWSEvent);

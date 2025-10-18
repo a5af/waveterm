@@ -7,7 +7,6 @@ import { CenteredDiv } from "@/app/element/quickelems";
 import { ModalsRenderer } from "@/app/modals/modalsrenderer";
 import { TabBar } from "@/app/tab/tabbar";
 import { TabContent } from "@/app/tab/tabcontent";
-import { Widgets } from "@/app/workspace/widgets";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { atoms, getApi } from "@/store/global";
 import { useAtomValue } from "jotai";
@@ -66,9 +65,8 @@ const WorkspaceElem = memo(() => {
                             {tabId === "" ? (
                                 <CenteredDiv>No Active Tab</CenteredDiv>
                             ) : (
-                                <div className="flex flex-row h-full">
+                                <div className="flex flex-row h-full w-full">
                                     <TabContent key={tabId} tabId={tabId} />
-                                    <Widgets />
                                 </div>
                             )}
                         </Panel>

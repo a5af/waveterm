@@ -9,6 +9,7 @@ import os from "os";
 import path from "path";
 import { WaveDevVarName, WaveDevViteVarName } from "../frontend/util/isdev";
 import * as keyutil from "../frontend/util/keyutil";
+import packageJson from "../package.json";
 
 // This is a little trick to ensure that Electron puts all its runtime data into a subdirectory to avoid conflicts with our own data.
 // On macOS, it will store to ~/Library/Application \Support/waveterm/electron
@@ -26,13 +27,43 @@ if (isDevVite) {
     process.env[WaveDevViteVarName] = "1";
 }
 
+// Parse CLI arguments for multi-instance support (must be done early, before paths are set)
+function parseInstanceId(): string | null {
+    const args = process.argv.slice(1);
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--instance" && i + 1 < args.length) {
+            return args[i + 1];
+        }
+        // Also support --instance=id format
+        if (args[i].startsWith("--instance=")) {
+            return args[i].substring("--instance=".length);
+        }
+    }
+    return null;
+}
+
+const instanceId = parseInstanceId();
+const isMultiInstance = instanceId !== null;
+
 const waveDirNamePrefix = "waveterm";
-const waveDirNameSuffix = isDev ? "dev" : "";
+let waveDirNameSuffix = isDev ? "dev" : "";
+// Config directory should be shared across instances (no instance suffix)
+const waveConfigDirName = `${waveDirNamePrefix}${waveDirNameSuffix ? `-${waveDirNameSuffix}` : ""}`;
+// Add instance ID to suffix for data directories only if multi-instance mode is enabled
+if (isMultiInstance) {
+    waveDirNameSuffix = waveDirNameSuffix ? `${waveDirNameSuffix}-${instanceId}` : instanceId;
+}
 const waveDirName = `${waveDirNamePrefix}${waveDirNameSuffix ? `-${waveDirNameSuffix}` : ""}`;
 
 const paths = envPaths("waveterm", { suffix: waveDirNameSuffix });
 
-app.setName(isDev ? "Wave (Dev)" : "Wave");
+// Set app name to include version and instance ID if in multi-instance mode
+const version = packageJson.version;
+let appName = isDev ? `Wave ${version} (Dev)` : `Wave ${version}`;
+if (isMultiInstance) {
+    appName = `${appName} [${instanceId}]`;
+}
+app.setName(appName);
 const unamePlatform = process.platform;
 const unameArch: string = process.arch;
 keyutil.setKeyUtilPlatform(unamePlatform);
@@ -116,9 +147,9 @@ function getWaveConfigDir(): string {
     if (override) {
         retVal = override;
     } else if (xdgConfigHome) {
-        retVal = path.join(xdgConfigHome, waveDirName);
+        retVal = path.join(xdgConfigHome, waveConfigDirName);
     } else {
-        retVal = path.join(app.getPath("home"), ".config", waveDirName);
+        retVal = path.join(app.getPath("home"), ".config", waveConfigDirName);
     }
     return ensurePathExists(retVal);
 }
@@ -254,11 +285,30 @@ async function callWithOriginalXdgCurrentDesktopAsync(callback: () => Promise<vo
     }
 }
 
+/**
+ * Gets multi-instance information.
+ * @returns Object containing isMultiInstance flag and instanceId (null if not in multi-instance mode)
+ */
+function getMultiInstanceInfo(): { isMultiInstance: boolean; instanceId: string | null } {
+    const args = process.argv.slice(1);
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === "--instance" && i + 1 < args.length) {
+            return { isMultiInstance: true, instanceId: args[i + 1] };
+        }
+        if (args[i].startsWith("--instance=")) {
+            const id = args[i].substring("--instance=".length);
+            return { isMultiInstance: true, instanceId: id };
+        }
+    }
+    return { isMultiInstance: false, instanceId: null };
+}
+
 export {
     callWithOriginalXdgCurrentDesktop,
     callWithOriginalXdgCurrentDesktopAsync,
     getElectronAppBasePath,
     getElectronAppUnpackedBasePath,
+    getMultiInstanceInfo,
     getWaveConfigDir,
     getWaveDataDir,
     getWaveSrvCwd,

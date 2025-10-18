@@ -63,6 +63,9 @@ export function runWaveSrv(handleWSEvent: (evtMsg: WSEventType) => void): Promis
     envCopy[WaveAuthKeyEnv] = AuthKey;
     envCopy[WaveDataHomeVarName] = getWaveDataDir();
     envCopy[WaveConfigHomeVarName] = getWaveConfigDir();
+    // Set cloud endpoints for dev mode
+    envCopy["WCLOUD_ENDPOINT"] = "https://api.waveterm.dev/central";
+    envCopy["WCLOUD_WS_ENDPOINT"] = "wss://wsapi.waveterm.dev/";
     const waveSrvCmd = getWaveSrvPath();
     console.log("trying to run local server", waveSrvCmd);
     const proc = child_process.spawn(getWaveSrvPath(), {
