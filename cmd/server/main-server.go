@@ -356,6 +356,17 @@ func main() {
 	waveLock, err := wavebase.AcquireWaveLock()
 	if err != nil {
 		log.Printf("error acquiring wave lock (another instance of Wave is likely running): %v\n", err)
+		log.Printf("\n")
+		log.Printf("========================================\n")
+		log.Printf("ERROR: Another instance of Wave is already running\n")
+		log.Printf("========================================\n")
+		log.Printf("\n")
+		log.Printf("To run multiple instances simultaneously, launch with the --instance flag:\n")
+		log.Printf("  Example: Wave.exe --instance=test\n")
+		log.Printf("  Example: Wave.exe --instance=v0.12.2\n")
+		log.Printf("\n")
+		log.Printf("Each instance will have its own isolated data while sharing your settings.\n")
+		log.Printf("========================================\n")
 		return
 	}
 	defer func() {
