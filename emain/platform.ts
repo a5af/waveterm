@@ -47,8 +47,9 @@ const isMultiInstance = instanceId !== null;
 
 const waveDirNamePrefix = "waveterm";
 let waveDirNameSuffix = isDev ? "dev" : "";
-// Config directory should be shared across instances (no instance suffix)
-const waveConfigDirName = `${waveDirNamePrefix}${waveDirNameSuffix ? `-${waveDirNameSuffix}` : ""}`;
+// Config directory: multi-instance uses production config to inherit main install settings
+// Single-instance dev mode uses dev config
+const waveConfigDirName = isMultiInstance ? waveDirNamePrefix : `${waveDirNamePrefix}${waveDirNameSuffix ? `-${waveDirNameSuffix}` : ""}`;
 // Add instance ID to suffix for data directories only if multi-instance mode is enabled
 if (isMultiInstance) {
     waveDirNameSuffix = waveDirNameSuffix ? `${waveDirNameSuffix}-${instanceId}` : instanceId;
