@@ -7,7 +7,7 @@ import * as WOS from "@/app/store/wos";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { getLayoutModelForStaticTab } from "@/layout/lib/layoutModelHooks";
-import { atoms, getApi, getTabMetaKeyAtom, isDev, recordTEvent, refocusNode } from "@/store/global";
+import { atoms, getApi, getTabMetaKeyAtom, recordTEvent, refocusNode } from "@/store/global";
 import debug from "debug";
 import * as jotai from "jotai";
 import { debounce } from "lodash-es";
@@ -18,7 +18,7 @@ const dlog = debug("wave:workspace");
 const AIPANEL_DEFAULTWIDTH = 300;
 const AIPANEL_DEFAULTWIDTHRATIO = 0.33;
 const AIPANEL_MINWIDTH = 300;
-const AIPANEL_MAXWIDTHRATIO = 0.5;
+const AIPANEL_MAXWIDTHRATIO = 0.66;
 
 class WorkspaceLayoutModel {
     private static instance: WorkspaceLayoutModel | null = null;
@@ -42,7 +42,7 @@ class WorkspaceLayoutModel {
         this.panelContainerRef = null;
         this.aiPanelWrapperRef = null;
         this.inResize = false;
-        this.aiPanelVisible = isDev();
+        this.aiPanelVisible = false;
         this.aiPanelWidth = null;
         this.panelVisibleAtom = jotai.atom(this.aiPanelVisible);
 
@@ -218,10 +218,7 @@ class WorkspaceLayoutModel {
         return this.aiPanelVisible;
     }
 
-    setAIPanelVisible(visible: boolean): void {
-        if (!isDev() && visible) {
-            return;
-        }
+    setAIPanelVisible(visible: boolean, opts?: { nofocus?: boolean }): void {
         if (this.focusTimeoutRef != null) {
             clearTimeout(this.focusTimeoutRef);
             this.focusTimeoutRef = null;
@@ -241,10 +238,12 @@ class WorkspaceLayoutModel {
         this.syncAIPanelRef();
 
         if (visible) {
-            this.focusTimeoutRef = setTimeout(() => {
-                WaveAIModel.getInstance().focusInput();
-                this.focusTimeoutRef = null;
-            }, 350);
+            if (!opts?.nofocus) {
+                this.focusTimeoutRef = setTimeout(() => {
+                    WaveAIModel.getInstance().focusInput();
+                    this.focusTimeoutRef = null;
+                }, 350);
+            }
         } else {
             const layoutModel = getLayoutModelForStaticTab();
             const focusedNode = globalStore.get(layoutModel.focusedNode);
@@ -290,9 +289,6 @@ class WorkspaceLayoutModel {
     }
 
     handleAIPanelResize(width: number, windowWidth: number): void {
-        if (!isDev()) {
-            return;
-        }
         if (!this.getAIPanelVisible()) {
             return;
         }

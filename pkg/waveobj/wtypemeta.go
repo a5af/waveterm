@@ -117,9 +117,10 @@ type MetaTSType struct {
 	TermShiftEnterNewline   *bool    `json:"term:shiftenternewline,omitempty"`
 	TermConnDebug           string   `json:"term:conndebug,omitempty"` // null, info, debug
 
-	WebZoom      float64 `json:"web:zoom,omitempty"`
-	WebHideNav   *bool   `json:"web:hidenav,omitempty"`
-	WebPartition string  `json:"web:partition,omitempty"`
+	WebZoom          float64 `json:"web:zoom,omitempty"`
+	WebHideNav       *bool   `json:"web:hidenav,omitempty"`
+	WebPartition     string  `json:"web:partition,omitempty"`
+	WebUserAgentType string  `json:"web:useragenttype,omitempty"`
 
 	MarkdownFontSize      float64 `json:"markdown:fontsize,omitempty"`
 	MarkdownFixedFontSize float64 `json:"markdown:fixedfontsize,omitempty"`
@@ -135,6 +136,9 @@ type MetaTSType struct {
 	VDomCorrelationId string `json:"vdom:correlationid,omitempty"`
 	VDomRoute         string `json:"vdom:route,omitempty"`
 	VDomPersist       bool   `json:"vdom:persist,omitempty"`
+
+	OnboardingGithubStar  bool   `json:"onboarding:githubstar,omitempty"`  // for client
+	OnboardingLastVersion string `json:"onboarding:lastversion,omitempty"` // for client (tracks semver of last 'onboarding' shown)
 
 	Count int `json:"count,omitempty"` // temp for cpu plot. will remove later
 }

@@ -17,7 +17,7 @@ import {
 import { getWebServerEndpoint } from "@/util/endpoints";
 import { fetch } from "@/util/fetchutil";
 import { setPlatform } from "@/util/platformutil";
-import { deepCompareReturnPrev, getPrefixedSettings, isBlank } from "@/util/util";
+import { deepCompareReturnPrev, fireAndForget, getPrefixedSettings, isBlank } from "@/util/util";
 import { atom, Atom, PrimitiveAtom, useAtomValue } from "jotai";
 import { globalStore } from "./jotaiStore";
 import { modalsModel } from "./modalmodel";
@@ -27,6 +27,7 @@ import { getFileSubject, waveEventSubscribe } from "./wps";
 
 let atoms: GlobalAtomsType;
 let globalEnvironment: "electron" | "renderer";
+let globalPrimaryTabStartup: boolean = false;
 const blockComponentModelMap = new Map<string, BlockComponentModel>();
 const Counters = new Map<string, number>();
 const ConnStatusMapAtom = atom(new Map<string, PrimitiveAtom<ConnStatus>>());
@@ -39,10 +40,12 @@ type GlobalInitOptions = {
     windowId: string;
     clientId: string;
     environment: "electron" | "renderer";
+    primaryTabStartup?: boolean;
 };
 
 function initGlobal(initOpts: GlobalInitOptions) {
     globalEnvironment = initOpts.environment;
+    globalPrimaryTabStartup = initOpts.primaryTabStartup ?? false;
     setPlatform(initOpts.platform);
     initGlobalAtoms(initOpts);
 }
@@ -101,6 +104,18 @@ function initGlobalAtoms(initOpts: GlobalInitOptions) {
     const settingsAtom = atom((get) => {
         return get(fullConfigAtom)?.settings ?? {};
     }) as Atom<SettingsType>;
+    const hasCustomAIPresetsAtom = atom((get) => {
+        const fullConfig = get(fullConfigAtom);
+        if (!fullConfig?.presets) {
+            return false;
+        }
+        for (const presetId in fullConfig.presets) {
+            if (presetId.startsWith("ai@") && presetId !== "ai@global" && presetId !== "ai@wave") {
+                return true;
+            }
+        }
+        return false;
+    }) as Atom<boolean>;
     const tabAtom: Atom<Tab> = atom((get) => {
         return WOS.getObjectValue(WOS.makeORef("tab", initOpts.tabId), get);
     });
@@ -157,6 +172,7 @@ function initGlobalAtoms(initOpts: GlobalInitOptions) {
         workspace: workspaceAtom,
         fullConfigAtom,
         settingsAtom,
+        hasCustomAIPresetsAtom,
         tabAtom,
         staticTabId: staticTabIdAtom,
         isFullScreen: isFullScreenAtom,
@@ -481,12 +497,12 @@ async function createBlock(blockDef: BlockDef, magnified = false, ephemeral = fa
     return blockId;
 }
 
-async function replaceBlock(blockId: string, blockDef: BlockDef): Promise<string> {
+async function replaceBlock(blockId: string, blockDef: BlockDef, focus: boolean): Promise<string> {
     const layoutModel = getLayoutModelForStaticTab();
     const rtOpts: RuntimeOpts = { termsize: { rows: 25, cols: 80 } };
     const newBlockId = await ObjectService.CreateBlock(blockDef, rtOpts);
-    setTimeout(async () => {
-        await ObjectService.DeleteBlock(blockId);
+    setTimeout(() => {
+        fireAndForget(() => ObjectService.DeleteBlock(blockId));
     }, 300);
     const targetNodeId = layoutModel.getNodeByBlockId(blockId)?.id;
     if (targetNodeId == null) {
@@ -496,7 +512,7 @@ async function replaceBlock(blockId: string, blockDef: BlockDef): Promise<string
         type: LayoutTreeActionType.ReplaceNode,
         targetNodeId: targetNodeId,
         newNode: newLayoutNode(undefined, undefined, undefined, { blockId: newBlockId }),
-        focused: true,
+        focused: focus,
     };
     layoutModel.treeReducer(replaceNodeAction);
     return newBlockId;
@@ -814,6 +830,7 @@ export {
     getSettingsPrefixAtom,
     getTabMetaKeyAtom,
     getUserName,
+    globalPrimaryTabStartup,
     globalStore,
     initGlobal,
     initGlobalWaveEventSubs,

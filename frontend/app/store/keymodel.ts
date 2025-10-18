@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { WaveAIModel } from "@/app/aipanel/waveai-model";
+import { focusManager } from "@/app/store/focusManager";
 import {
     atoms,
     createBlock,
@@ -18,7 +19,7 @@ import {
     replaceBlock,
     WOS,
 } from "@/app/store/global";
-import { focusManager } from "@/app/store/focusManager";
+import { TabBarModel } from "@/app/tab/tabbar-model";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { deleteLayoutModelForTab, getLayoutModelForStaticTab, NavigateDirection } from "@/layout/index";
 import * as keyutil from "@/util/keyutil";
@@ -32,6 +33,7 @@ type KeyHandler = (event: WaveKeyboardEvent) => boolean;
 const simpleControlShiftAtom = jotai.atom(false);
 const globalKeyMap = new Map<string, (waveEvent: WaveKeyboardEvent) => boolean>();
 const globalChordMap = new Map<string, Map<string, KeyHandler>>();
+let globalKeybindingsDisabled = false;
 
 // track current chord state and timeout (for resetting)
 let activeChord: string | null = null;
@@ -85,6 +87,14 @@ function unsetControlShift() {
     globalStore.set(atoms.controlShiftDelayAtom, false);
 }
 
+function disableGlobalKeybindings() {
+    globalKeybindingsDisabled = true;
+}
+
+function enableGlobalKeybindings() {
+    globalKeybindingsDisabled = false;
+}
+
 function shouldDispatchToBlock(e: WaveKeyboardEvent): boolean {
     if (globalStore.get(atoms.modalOpen)) {
         return false;
@@ -104,23 +114,80 @@ function shouldDispatchToBlock(e: WaveKeyboardEvent): boolean {
     return true;
 }
 
-function genericClose() {
-    const ws = globalStore.get(atoms.workspace);
+function getStaticTabBlockCount(): number {
     const tabId = globalStore.get(atoms.staticTabId);
     const tabORef = WOS.makeORef("tab", tabId);
     const tabAtom = WOS.getWaveObjectAtom<Tab>(tabORef);
     const tabData = globalStore.get(tabAtom);
-    if (tabData == null) {
+    return tabData?.blockids?.length ?? 0;
+}
+
+function isStaticTabPinned(): boolean {
+    const ws = globalStore.get(atoms.workspace);
+    const tabId = globalStore.get(atoms.staticTabId);
+    return ws.pinnedtabids?.includes(tabId) ?? false;
+}
+
+function simpleCloseStaticTab() {
+    const ws = globalStore.get(atoms.workspace);
+    const tabId = globalStore.get(atoms.staticTabId);
+    getApi().closeTab(ws.oid, tabId);
+    deleteLayoutModelForTab(tabId);
+}
+
+function uxCloseBlock(blockId: string) {
+    if (isStaticTabPinned() && getStaticTabBlockCount() === 1) {
+        TabBarModel.getInstance().jiggleActivePinnedTab();
         return;
     }
-    if (ws.pinnedtabids?.includes(tabId) && tabData.blockids?.length == 1) {
-        // don't allow closing the last block in a pinned tab
+
+    const workspaceLayoutModel = WorkspaceLayoutModel.getInstance();
+    const isAIPanelOpen = workspaceLayoutModel.getAIPanelVisible();
+    if (isAIPanelOpen && getStaticTabBlockCount() === 1) {
+        const aiModel = WaveAIModel.getInstance();
+        const shouldSwitchToAI = !aiModel.isChatEmpty || aiModel.hasNonEmptyInput();
+        if (shouldSwitchToAI) {
+            replaceBlock(blockId, { meta: { view: "launcher" } }, false);
+            setTimeout(() => WaveAIModel.getInstance().focusInput(), 50);
+            return;
+        }
+    }
+    const layoutModel = getLayoutModelForStaticTab();
+    const node = layoutModel.getNodeByBlockId(blockId);
+    if (node) {
+        fireAndForget(() => layoutModel.closeNode(node.id));
+    }
+}
+
+function genericClose() {
+    const focusType = focusManager.getFocusType();
+    if (focusType === "waveai") {
+        WorkspaceLayoutModel.getInstance().setAIPanelVisible(false);
         return;
     }
-    if (tabData.blockids == null || tabData.blockids.length == 0) {
-        // close tab
-        getApi().closeTab(ws.oid, tabId);
-        deleteLayoutModelForTab(tabId);
+    if (isStaticTabPinned() && getStaticTabBlockCount() === 1) {
+        TabBarModel.getInstance().jiggleActivePinnedTab();
+        return;
+    }
+
+    const workspaceLayoutModel = WorkspaceLayoutModel.getInstance();
+    const isAIPanelOpen = workspaceLayoutModel.getAIPanelVisible();
+    if (isAIPanelOpen && getStaticTabBlockCount() === 1) {
+        const aiModel = WaveAIModel.getInstance();
+        const shouldSwitchToAI = !aiModel.isChatEmpty || aiModel.hasNonEmptyInput();
+        if (shouldSwitchToAI) {
+            const layoutModel = getLayoutModelForStaticTab();
+            const focusedNode = globalStore.get(layoutModel.focusedNode);
+            if (focusedNode) {
+                replaceBlock(focusedNode.data.blockId, { meta: { view: "launcher" } }, false);
+                setTimeout(() => WaveAIModel.getInstance().focusInput(), 50);
+                return;
+            }
+        }
+    }
+    const blockCount = getStaticTabBlockCount();
+    if (blockCount === 0) {
+        simpleCloseStaticTab();
         return;
     }
     const layoutModel = getLayoutModelForStaticTab();
@@ -303,6 +370,9 @@ function checkKeyMap<T>(waveEvent: WaveKeyboardEvent, keyMap: Map<string, T>): [
 }
 
 function appHandleKeyDown(waveEvent: WaveKeyboardEvent): boolean {
+    if (globalKeybindingsDisabled) {
+        return false;
+    }
     const nativeEvent = (waveEvent as any).nativeEvent;
     if (lastHandledEvent != null && nativeEvent != null && lastHandledEvent === nativeEvent) {
         console.log("lastHandledEvent return false");
@@ -427,16 +497,11 @@ function registerGlobalKeys() {
         return true;
     });
     globalKeyMap.set("Cmd:Shift:w", () => {
-        const tabId = globalStore.get(atoms.staticTabId);
-        const ws = globalStore.get(atoms.workspace);
-        if (ws.pinnedtabids?.includes(tabId)) {
-            // switch to first unpinned tab if it exists (for close spamming)
-            if (ws.tabids != null && ws.tabids.length > 0) {
-                getApi().setActiveTab(ws.tabids[0]);
-            }
+        if (isStaticTabPinned()) {
+            TabBarModel.getInstance().jiggleActivePinnedTab();
             return true;
         }
-        getApi().closeTab(ws.oid, tabId);
+        simpleCloseStaticTab();
         return true;
     });
     globalKeyMap.set("Cmd:m", () => {
@@ -468,11 +533,15 @@ function registerGlobalKeys() {
         if (blockId == null) {
             return true;
         }
-        replaceBlock(blockId, {
-            meta: {
-                view: "launcher",
+        replaceBlock(
+            blockId,
+            {
+                meta: {
+                    view: "launcher",
+                },
             },
-        });
+            true
+        );
         return true;
     });
     globalKeyMap.set("Cmd:g", () => {
@@ -579,23 +648,10 @@ function getAllGlobalKeyBindings(): string[] {
     return allKeys;
 }
 
-// these keyboard events happen *anywhere*, even if you have focus in an input or somewhere else.
-function handleGlobalWaveKeyboardEvents(waveEvent: WaveKeyboardEvent): boolean {
-    for (const key of globalKeyMap.keys()) {
-        if (keyutil.checkKeyPressed(waveEvent, key)) {
-            const handler = globalKeyMap.get(key);
-            if (handler == null) {
-                return false;
-            }
-            return handler(waveEvent);
-        }
-    }
-    return false;
-}
-
 export {
     appHandleKeyDown,
-    getAllGlobalKeyBindings,
+    disableGlobalKeybindings,
+    enableGlobalKeybindings,
     getSimpleControlShiftAtom,
     globalRefocus,
     globalRefocusWithTimeout,
@@ -604,4 +660,5 @@ export {
     registerGlobalKeys,
     tryReinjectKey,
     unsetControlShift,
+    uxCloseBlock,
 };

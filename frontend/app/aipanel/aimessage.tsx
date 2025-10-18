@@ -3,22 +3,52 @@
 
 import { WaveStreamdown } from "@/app/element/streamdown";
 import { cn } from "@/util/util";
-import { useAtomValue } from "jotai";
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
 import { getFileIcon } from "./ai-utils";
+import { AIFeedbackButtons } from "./aifeedbackbuttons";
+import { AIToolUseGroup } from "./aitooluse";
 import { WaveUIMessage, WaveUIMessagePart } from "./aitypes";
 import { WaveAIModel } from "./waveai-model";
 
-const AIThinking = memo(() => (
-    <div className="flex items-center gap-2">
-        <div className="animate-pulse flex items-center">
-            <i className="fa fa-circle text-[10px]"></i>
-            <i className="fa fa-circle text-[10px] mx-1"></i>
-            <i className="fa fa-circle text-[10px]"></i>
-        </div>
-        <span className="text-sm text-gray-400">AI is thinking...</span>
-    </div>
-));
+const AIThinking = memo(
+    ({ message = "AI is thinking...", reasoningText }: { message?: string; reasoningText?: string }) => {
+        const scrollRef = useRef<HTMLDivElement>(null);
+
+        useEffect(() => {
+            if (scrollRef.current && reasoningText) {
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }
+        }, [reasoningText]);
+
+        const displayText = reasoningText
+            ? (() => {
+                  const lastDoubleNewline = reasoningText.lastIndexOf("\n\n");
+                  return lastDoubleNewline !== -1 ? reasoningText.substring(lastDoubleNewline + 2) : reasoningText;
+              })()
+            : "";
+
+        return (
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                    <div className="animate-pulse flex items-center">
+                        <i className="fa fa-circle text-[10px]"></i>
+                        <i className="fa fa-circle text-[10px] mx-1"></i>
+                        <i className="fa fa-circle text-[10px]"></i>
+                    </div>
+                    {message && <span className="text-sm text-gray-400">{message}</span>}
+                </div>
+                {displayText && (
+                    <div
+                        ref={scrollRef}
+                        className="text-sm text-gray-500 overflow-y-auto max-h-[2lh] max-w-[600px] pl-9"
+                    >
+                        {displayText}
+                    </div>
+                )}
+            </div>
+        );
+    }
+);
 
 AIThinking.displayName = "AIThinking";
 
@@ -93,11 +123,6 @@ const AIMessagePart = memo(({ part, role, isStreaming }: AIMessagePartProps) => 
         }
     }
 
-    if (part.type.startsWith("tool-") && "state" in part && part.state === "input-available") {
-        const toolName = part.type.substring(5); // Remove "tool-" prefix
-        return <div className="text-gray-400 italic">Calling tool {toolName}</div>;
-    }
-
     return null;
 });
 
@@ -110,8 +135,68 @@ interface AIMessageProps {
 
 const isDisplayPart = (part: WaveUIMessagePart): boolean => {
     return (
-        part.type === "text" || (part.type.startsWith("tool-") && "state" in part && part.state === "input-available")
+        part.type === "text" ||
+        part.type === "data-tooluse" ||
+        (part.type.startsWith("tool-") && "state" in part && part.state === "input-available")
     );
+};
+
+type MessagePart =
+    | { type: "single"; part: WaveUIMessagePart }
+    | { type: "toolgroup"; parts: Array<WaveUIMessagePart & { type: "data-tooluse" }> };
+
+const groupMessageParts = (parts: WaveUIMessagePart[]): MessagePart[] => {
+    const grouped: MessagePart[] = [];
+    let currentToolGroup: Array<WaveUIMessagePart & { type: "data-tooluse" }> = [];
+
+    for (const part of parts) {
+        if (part.type === "data-tooluse") {
+            currentToolGroup.push(part as WaveUIMessagePart & { type: "data-tooluse" });
+        } else {
+            if (currentToolGroup.length > 0) {
+                grouped.push({ type: "toolgroup", parts: currentToolGroup });
+                currentToolGroup = [];
+            }
+            grouped.push({ type: "single", part });
+        }
+    }
+
+    if (currentToolGroup.length > 0) {
+        grouped.push({ type: "toolgroup", parts: currentToolGroup });
+    }
+
+    return grouped;
+};
+
+const getThinkingMessage = (
+    parts: WaveUIMessagePart[],
+    isStreaming: boolean,
+    role: string
+): { message: string; reasoningText?: string } | null => {
+    if (!isStreaming || role !== "assistant") {
+        return null;
+    }
+
+    const hasPendingApprovals = parts.some(
+        (part) => part.type === "data-tooluse" && part.data?.approval === "needs-approval"
+    );
+
+    if (hasPendingApprovals) {
+        return { message: "Waiting for Tool Approvals..." };
+    }
+
+    const lastPart = parts[parts.length - 1];
+
+    if (lastPart?.type === "reasoning") {
+        const reasoningContent = lastPart.text || "";
+        return { message: "AI is thinking...", reasoningText: reasoningContent };
+    }
+
+    if (lastPart?.type === "text" && lastPart.text) {
+        return null;
+    }
+
+    return { message: "" };
 };
 
 export const AIMessage = memo(({ message, isStreaming }: AIMessageProps) => {
@@ -120,41 +205,48 @@ export const AIMessage = memo(({ message, isStreaming }: AIMessageProps) => {
     const fileParts = parts.filter(
         (part): part is WaveUIMessagePart & { type: "data-userfile" } => part.type === "data-userfile"
     );
-    const hasContent =
-        displayParts.length > 0 &&
-        displayParts.some((part) => (part.type === "text" && part.text) || part.type.startsWith("tool-"));
 
-    const showThinkingOnly = !hasContent && isStreaming && message.role === "assistant";
-    const showThinkingInline = hasContent && isStreaming && message.role === "assistant";
+    const thinkingData = getThinkingMessage(parts, isStreaming, message.role);
+    const groupedParts = groupMessageParts(displayParts);
 
     return (
         <div className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
             <div
                 className={cn(
-                    "px-2 py-2 rounded-lg",
-                    message.role === "user" ? "bg-accent-800 text-white max-w-[calc(100%-20px)]" : null
+                    "px-2 rounded-lg [&>*:first-child]:!mt-0",
+                    message.role === "user" ? "py-2 bg-accent-800 text-white max-w-[calc(100%-20px)]" : null
                 )}
             >
-                {showThinkingOnly ? (
-                    <AIThinking />
-                ) : !hasContent && !isStreaming ? (
+                {displayParts.length === 0 && !isStreaming && !thinkingData ? (
                     <div className="whitespace-pre-wrap break-words">(no text content)</div>
                 ) : (
                     <>
-                        {displayParts.map((part, index: number) => (
-                            <div key={index} className={cn(index > 0 && "mt-2")}>
-                                <AIMessagePart part={part} role={message.role} isStreaming={isStreaming} />
-                            </div>
-                        ))}
-                        {showThinkingInline && (
+                        {groupedParts.map((group, index: number) =>
+                            group.type === "toolgroup" ? (
+                                <AIToolUseGroup key={index} parts={group.parts} isStreaming={isStreaming} />
+                            ) : (
+                                <div key={index} className="mt-2">
+                                    <AIMessagePart part={group.part} role={message.role} isStreaming={isStreaming} />
+                                </div>
+                            )
+                        )}
+                        {thinkingData != null && (
                             <div className="mt-2">
-                                <AIThinking />
+                                <AIThinking message={thinkingData.message} reasoningText={thinkingData.reasoningText} />
                             </div>
                         )}
                     </>
                 )}
 
                 {message.role === "user" && <UserMessageFiles fileParts={fileParts} />}
+                {message.role === "assistant" && !isStreaming && displayParts.length > 0 && (
+                    <AIFeedbackButtons
+                        messageText={parts
+                            .filter((p) => p.type === "text")
+                            .map((p) => p.text || "")
+                            .join("\n\n")}
+                    />
+                )}
             </div>
         </div>
     );

@@ -5,6 +5,14 @@
 
 declare global {
 
+    // wshrpc.AIAttachedFile
+    type AIAttachedFile = {
+        name: string;
+        type: string;
+        size: number;
+        data64: string;
+    };
+
     // wshrpc.ActivityDisplayType
     type ActivityDisplayType = {
         width: number;
@@ -318,6 +326,21 @@ declare global {
     type CommandWaitForRouteData = {
         routeid: string;
         waitms: number;
+    };
+
+    // wshrpc.CommandWaveAIAddContextData
+    type CommandWaveAIAddContextData = {
+        files?: AIAttachedFile[];
+        text?: string;
+        submit?: boolean;
+        newchat?: boolean;
+    };
+
+    // wshrpc.CommandWaveAIToolApproveData
+    type CommandWaveAIToolApproveData = {
+        toolcallid: string;
+        keepalive?: boolean;
+        approval?: string;
     };
 
     // wshrpc.CommandWebSelectorData
@@ -648,6 +671,7 @@ declare global {
         "web:zoom"?: number;
         "web:hidenav"?: boolean;
         "web:partition"?: string;
+        "web:useragenttype"?: string;
         "markdown:fontsize"?: number;
         "markdown:fixedfontsize"?: number;
         "tsunami:*"?: boolean;
@@ -660,6 +684,8 @@ declare global {
         "vdom:correlationid"?: string;
         "vdom:route"?: string;
         "vdom:persist"?: boolean;
+        "onboarding:githubstar"?: boolean;
+        "onboarding:lastversion"?: string;
         count?: number;
     };
 
@@ -685,6 +711,13 @@ declare global {
         "tsunami:shortdesc"?: string;
         "tsunami:schemas"?: any;
         "cmd:hascurcwd"?: boolean;
+        "shell:state"?: string;
+        "shell:type"?: string;
+        "shell:version"?: string;
+        "shell:uname"?: string;
+        "shell:inputempty"?: boolean;
+        "shell:lastcmd"?: string;
+        "shell:lastcmdexitcode"?: number;
     };
 
     // iochantypes.Packet
@@ -906,6 +939,8 @@ declare global {
         "client:isdev"?: boolean;
         "autoupdate:channel"?: string;
         "autoupdate:enabled"?: boolean;
+        "localshell:type"?: string;
+        "localshell:version"?: string;
         "loc:countrycode"?: string;
         "loc:regioncode"?: string;
         "settings:customwidgets"?: number;
@@ -926,6 +961,9 @@ declare global {
         "wsh:cmd"?: string;
         "wsh:haderror"?: boolean;
         "conn:conntype"?: string;
+        "onboarding:feature"?: "waveai" | "magnify" | "wsh";
+        "onboarding:version"?: string;
+        "onboarding:githubstar"?: "already" | "star" | "later";
         "display:height"?: number;
         "display:width"?: number;
         "display:dpr"?: number;
@@ -942,8 +980,10 @@ declare global {
         "waveai:model"?: string;
         "waveai:inputtokens"?: number;
         "waveai:outputtokens"?: number;
+        "waveai:nativewebsearchcount"?: number;
         "waveai:requestcount"?: number;
         "waveai:toolusecount"?: number;
+        "waveai:tooluseerrorcount"?: number;
         "waveai:tooldetail"?: {[key: string]: number};
         "waveai:premiumreq"?: number;
         "waveai:proxyreq"?: number;
@@ -955,6 +995,7 @@ declare global {
         "waveai:firstbytems"?: number;
         "waveai:requestdurms"?: number;
         "waveai:widgetaccess"?: boolean;
+        "waveai:feedback"?: "good" | "bad";
         $set?: TEventUserProps;
         $set_once?: TEventUserProps;
     };
@@ -969,6 +1010,8 @@ declare global {
         "client:isdev"?: boolean;
         "autoupdate:channel"?: string;
         "autoupdate:enabled"?: boolean;
+        "localshell:type"?: string;
+        "localshell:version"?: string;
         "loc:countrycode"?: string;
         "loc:regioncode"?: string;
         "settings:customwidgets"?: number;

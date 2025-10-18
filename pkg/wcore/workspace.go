@@ -208,7 +208,7 @@ func CreateTab(ctx context.Context, workspaceId string, tabName string, activate
 	}
 
 	// The initial tab for the initial launch should be pinned
-	tab, err := createTabObj(ctx, workspaceId, tabName, pinned || isInitialLaunch)
+	tab, err := createTabObj(ctx, workspaceId, tabName, pinned || isInitialLaunch, nil)
 	if err != nil {
 		return "", fmt.Errorf("error creating tab: %w", err)
 	}
@@ -219,7 +219,7 @@ func CreateTab(ctx context.Context, workspaceId string, tabName string, activate
 		}
 	}
 
-	// No need to apply an initial layout for the initial launch, since the starter layout will get applied after TOS modal dismissal
+	// No need to apply an initial layout for the initial launch, since the starter layout will get applied after onboarding modal dismissal
 	if !isInitialLaunch {
 		err = ApplyPortableLayout(ctx, tab.OID, GetNewTabLayout(), true)
 		if err != nil {
@@ -240,7 +240,7 @@ func CreateTab(ctx context.Context, workspaceId string, tabName string, activate
 	return tab.OID, nil
 }
 
-func createTabObj(ctx context.Context, workspaceId string, name string, pinned bool) (*waveobj.Tab, error) {
+func createTabObj(ctx context.Context, workspaceId string, name string, pinned bool, meta waveobj.MetaMapType) (*waveobj.Tab, error) {
 	ws, err := GetWorkspace(ctx, workspaceId)
 	if err != nil {
 		return nil, fmt.Errorf("workspace %s not found: %w", workspaceId, err)
@@ -251,6 +251,7 @@ func createTabObj(ctx context.Context, workspaceId string, name string, pinned b
 		Name:        name,
 		BlockIds:    []string{},
 		LayoutState: layoutStateId,
+		Meta:        meta,
 	}
 	layoutState := &waveobj.LayoutState{
 		OID: layoutStateId,
@@ -302,8 +303,12 @@ func DeleteTab(ctx context.Context, workspaceId string, tabId string, recursive 
 	// if the tab is active, determine new active tab
 	newActiveTabId := ws.ActiveTabId
 	if ws.ActiveTabId == tabId {
-		if len(ws.TabIds) > 0 && tabIdx != -1 {
-			newActiveTabId = ws.TabIds[max(0, min(tabIdx-1, len(ws.TabIds)-1))]
+		if len(ws.TabIds) > 0 {
+			if tabIdx != -1 {
+				newActiveTabId = ws.TabIds[max(0, min(tabIdx-1, len(ws.TabIds)-1))]
+			} else {
+				newActiveTabId = ws.TabIds[0]
+			}
 		} else if len(ws.PinnedTabIds) > 0 {
 			newActiveTabId = ws.PinnedTabIds[0]
 		} else {

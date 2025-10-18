@@ -27,7 +27,7 @@ tasks:
             - build:backend
         env:
             WAVETERM_ENVFILE: "{{.ROOT_DIR}}/.env"
-            WCLOUD_ENDPOINT: "https://api-dev.waveterm.dev"
+            WCLOUD_ENDPOINT: "https://api-dev.waveterm.dev/central"
             WCLOUD_WS_ENDPOINT: "wss://wsapi-dev.waveterm.dev"
 
     electron:start:
@@ -41,7 +41,7 @@ tasks:
             - build:backend
         env:
             WAVETERM_ENVFILE: "{{.ROOT_DIR}}/.env"
-            WCLOUD_ENDPOINT: "https://api-dev.waveterm.dev"
+            WCLOUD_ENDPOINT: "https://api-dev.waveterm.dev/central"
             WCLOUD_WS_ENDPOINT: "wss://wsapi-dev.waveterm.dev"
 
     electron:quickdev:
@@ -157,6 +157,7 @@ tasks:
             - go.mod
             - go.sum
             - pkg/**/*.go
+            - pkg/**/*.sh
             - cmd/**/*.go
             - tsunami/go.mod
             - tsunami/go.sum
@@ -188,6 +189,7 @@ tasks:
             - "cmd/server/*.go"
             - "pkg/**/*.go"
             - "pkg/**/*.json"
+            - "pkg/**/*.sh"
             - tsunami/**/*.go
         generates:
             - dist/bin/wavesrv.*
@@ -215,6 +217,7 @@ tasks:
             - "cmd/server/*.go"
             - "pkg/**/*.go"
             - "pkg/**/*.json"
+            - "pkg/**/*.sh"
             - "tsunami/**/*.go"
         generates:
             - dist/bin/wavesrv.*

@@ -12,16 +12,51 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/wavetermdev/waveterm/pkg/aiusechat/uctypes"
+	"github.com/wavetermdev/waveterm/pkg/util/utilfn"
+	"github.com/wavetermdev/waveterm/pkg/wavebase"
 )
 
 const (
 	OpenAIDefaultAPIVersion = "2024-12-31"
 	OpenAIDefaultMaxTokens  = 4096
 )
+
+// extractXmlAttribute extracts an attribute value from an XML-like tag.
+// Expects double-quoted strings where internal quotes are encoded as &quot;.
+// Returns the unquoted value and true if found, or empty string and false if not found or invalid.
+func extractXmlAttribute(tag, attrName string) (string, bool) {
+	attrStart := strings.Index(tag, attrName+"=")
+	if attrStart == -1 {
+		return "", false
+	}
+
+	pos := attrStart + len(attrName+"=")
+	start := strings.Index(tag[pos:], `"`)
+	if start == -1 {
+		return "", false
+	}
+	start += pos
+
+	end := strings.Index(tag[start+1:], `"`)
+	if end == -1 {
+		return "", false
+	}
+	end += start + 1
+
+	quotedValue := tag[start : end+1]
+	value, err := strconv.Unquote(quotedValue)
+	if err != nil {
+		return "", false
+	}
+
+	value = strings.ReplaceAll(value, "&quot;", `"`)
+	return value, true
+}
 
 // ---------- OpenAI Request Types ----------
 
@@ -75,11 +110,11 @@ type OpenAIRequest struct {
 }
 
 type OpenAIRequestTool struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Parameters  any    `json:"parameters"`
-	Strict      bool   `json:"strict"`
 	Type        string `json:"type"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Parameters  any    `json:"parameters,omitempty"`
+	Strict      bool   `json:"strict,omitempty"`
 }
 
 // ConvertToolDefinitionToOpenAI converts a generic ToolDefinition to OpenAI format
@@ -95,6 +130,9 @@ func ConvertToolDefinitionToOpenAI(tool uctypes.ToolDefinition) OpenAIRequestToo
 }
 
 func debugPrintReq(req *OpenAIRequest, endpoint string) {
+	if !wavebase.IsDevMode() {
+		return
+	}
 	var toolNames []string
 	for _, tool := range req.Tools {
 		toolNames = append(toolNames, tool.Name)
@@ -103,6 +141,7 @@ func debugPrintReq(req *OpenAIRequest, endpoint string) {
 	if len(toolNames) > 0 {
 		log.Printf("tools: %s\n", strings.Join(toolNames, ","))
 	}
+	// log.Printf("reasoning %v\n", req.Reasoning)
 
 	log.Printf("inputs (%d):", len(req.Input))
 	for idx, input := range req.Input {
@@ -113,13 +152,13 @@ func debugPrintReq(req *OpenAIRequest, endpoint string) {
 // buildOpenAIHTTPRequest creates a complete HTTP request for the OpenAI API
 func buildOpenAIHTTPRequest(ctx context.Context, inputs []any, chatOpts uctypes.WaveChatOpts, cont *uctypes.WaveContinueResponse) (*http.Request, error) {
 	opts := chatOpts.Config
-	
+
 	// If continuing from premium rate limit, downgrade to default model and low thinking
 	if cont != nil && cont.ContinueFromKind == uctypes.StopKindPremiumRateLimit {
 		opts.Model = uctypes.DefaultOpenAIModel
 		opts.ThinkingLevel = uctypes.ThinkingLevelLow
 	}
-	
+
 	if opts.Model == "" {
 		return nil, errors.New("opts.model is required")
 	}
@@ -183,10 +222,21 @@ func buildOpenAIHTTPRequest(ctx context.Context, inputs []any, chatOpts uctypes.
 		reqBody.Tools = append(reqBody.Tools, convertedTool)
 	}
 
+	// Add native web search tool if enabled
+	if chatOpts.AllowNativeWebSearch {
+		webSearchTool := OpenAIRequestTool{
+			Type: "web_search",
+		}
+		reqBody.Tools = append(reqBody.Tools, webSearchTool)
+	}
+
 	// Set reasoning based on thinking level
 	if opts.ThinkingLevel != "" {
 		reqBody.Reasoning = &ReasoningType{
 			Effort: opts.ThinkingLevel, // low, medium, high map directly
+		}
+		if opts.Model == "gpt-5" {
+			reqBody.Reasoning.Summary = "auto"
 		}
 	}
 
@@ -284,24 +334,34 @@ func convertFileAIMessagePart(part uctypes.AIMessagePart) (*OpenAIMessageContent
 		}, nil
 
 	case part.MimeType == "text/plain":
-		// Handle text/plain files as input_text with special formatting
 		var textContent string
 
 		if len(part.Data) > 0 {
 			textContent = string(part.Data)
 		} else if part.URL != "" {
-			return nil, fmt.Errorf("dropping text/plain file with URL (must be fetched and converted to data)")
+			if strings.HasPrefix(part.URL, "data:") {
+				_, decodedData, err := utilfn.DecodeDataURL(part.URL)
+				if err != nil {
+					return nil, fmt.Errorf("failed to decode data URL for text/plain file: %w", err)
+				}
+				textContent = string(decodedData)
+			} else {
+				return nil, fmt.Errorf("dropping text/plain file with URL (must be fetched and converted to data)")
+			}
 		} else {
 			return nil, fmt.Errorf("text/plain file part missing data")
 		}
 
-		// Format as: file "filename" (mimetype)\n\nfile-content
 		fileName := part.FileName
 		if fileName == "" {
 			fileName = "untitled.txt"
 		}
 
-		formattedText := fmt.Sprintf("file %q (%s)\n\n%s", fileName, part.MimeType, textContent)
+		encodedFileName := strings.ReplaceAll(fileName, `"`, "&quot;")
+		quotedFileName := strconv.Quote(encodedFileName)
+
+		randomSuffix := uuid.New().String()[0:8]
+		formattedText := fmt.Sprintf("<AttachedTextFile_%s file_name=%s>\n%s\n</AttachedTextFile_%s>", randomSuffix, quotedFileName, textContent, randomSuffix)
 
 		return &OpenAIMessageContent{
 			Type: "input_text",
@@ -427,11 +487,31 @@ func (m *OpenAIChatMessage) ConvertToUIMessage() *uctypes.UIMessage {
 		for _, block := range m.Message.Content {
 			switch block.Type {
 			case "input_text", "output_text":
-				// Convert text blocks to UIMessagePart
-				parts = append(parts, uctypes.UIMessagePart{
-					Type: "text",
-					Text: block.Text,
-				})
+				if strings.HasPrefix(block.Text, "<AttachedTextFile_") {
+					openTagEnd := strings.Index(block.Text, "\n")
+					if openTagEnd == -1 || block.Text[openTagEnd-1] != '>' {
+						continue
+					}
+
+					openTag := block.Text[:openTagEnd]
+					fileName, ok := extractXmlAttribute(openTag, "file_name")
+					if !ok {
+						continue
+					}
+
+					parts = append(parts, uctypes.UIMessagePart{
+						Type: "data-userfile",
+						Data: uctypes.UIMessageDataUserFile{
+							FileName: fileName,
+							MimeType: "text/plain",
+						},
+					})
+				} else {
+					parts = append(parts, uctypes.UIMessagePart{
+						Type: "text",
+						Text: block.Text,
+					})
+				}
 			case "input_image":
 				// Convert image blocks to data-userfile UIMessagePart (only for user role)
 				if role == "user" {
@@ -463,23 +543,11 @@ func (m *OpenAIChatMessage) ConvertToUIMessage() *uctypes.UIMessage {
 	} else if m.FunctionCall != nil {
 		// Handle function call input
 		role = "assistant"
-		if m.FunctionCall.Name != "" && m.FunctionCall.CallId != "" {
-			// Parse arguments JSON string to interface{}
-			var args interface{}
-			if m.FunctionCall.Arguments != "" {
-				if err := json.Unmarshal([]byte(m.FunctionCall.Arguments), &args); err != nil {
-					log.Printf("openai: failed to parse function call arguments: %v", err)
-					args = map[string]interface{}{}
-				}
-			} else {
-				args = map[string]interface{}{}
-			}
-
+		if m.FunctionCall.ToolUseData != nil {
 			parts = append(parts, uctypes.UIMessagePart{
-				Type:       "tool-" + m.FunctionCall.Name,
-				State:      "input-available",
-				ToolCallID: m.FunctionCall.CallId,
-				Input:      args,
+				Type: "data-tooluse",
+				ID:   m.FunctionCall.CallId,
+				Data: *m.FunctionCall.ToolUseData,
 			})
 		}
 	} else if m.FunctionCallOutput != nil {

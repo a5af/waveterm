@@ -581,9 +581,21 @@ func WaitForRouteCommand(w *wshutil.WshRpc, data wshrpc.CommandWaitForRouteData,
 	return resp, err
 }
 
+// command "waveaiaddcontext", wshserver.WaveAIAddContextCommand
+func WaveAIAddContextCommand(w *wshutil.WshRpc, data wshrpc.CommandWaveAIAddContextData, opts *wshrpc.RpcOpts) error {
+	_, err := sendRpcRequestCallHelper[any](w, "waveaiaddcontext", data, opts)
+	return err
+}
+
 // command "waveaienabletelemetry", wshserver.WaveAIEnableTelemetryCommand
 func WaveAIEnableTelemetryCommand(w *wshutil.WshRpc, opts *wshrpc.RpcOpts) error {
 	_, err := sendRpcRequestCallHelper[any](w, "waveaienabletelemetry", nil, opts)
+	return err
+}
+
+// command "waveaitoolapprove", wshserver.WaveAIToolApproveCommand
+func WaveAIToolApproveCommand(w *wshutil.WshRpc, data wshrpc.CommandWaveAIToolApproveData, opts *wshrpc.RpcOpts) error {
+	_, err := sendRpcRequestCallHelper[any](w, "waveaitoolapprove", data, opts)
 	return err
 }
 

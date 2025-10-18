@@ -116,6 +116,7 @@ const (
 	MetaKey_WebZoom                          = "web:zoom"
 	MetaKey_WebHideNav                       = "web:hidenav"
 	MetaKey_WebPartition                     = "web:partition"
+	MetaKey_WebUserAgentType                 = "web:useragenttype"
 
 	MetaKey_MarkdownFontSize                 = "markdown:fontsize"
 	MetaKey_MarkdownFixedFontSize            = "markdown:fixedfontsize"
@@ -131,6 +132,9 @@ const (
 	MetaKey_VDomCorrelationId                = "vdom:correlationid"
 	MetaKey_VDomRoute                        = "vdom:route"
 	MetaKey_VDomPersist                      = "vdom:persist"
+
+	MetaKey_OnboardingGithubStar             = "onboarding:githubstar"
+	MetaKey_OnboardingLastVersion            = "onboarding:lastversion"
 
 	MetaKey_Count                            = "count"
 )

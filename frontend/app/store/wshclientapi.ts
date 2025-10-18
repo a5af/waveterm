@@ -487,9 +487,19 @@ class RpcApiType {
         return client.wshRpcCall("waitforroute", data, opts);
     }
 
+    // command "waveaiaddcontext" [call]
+    WaveAIAddContextCommand(client: WshClient, data: CommandWaveAIAddContextData, opts?: RpcOpts): Promise<void> {
+        return client.wshRpcCall("waveaiaddcontext", data, opts);
+    }
+
     // command "waveaienabletelemetry" [call]
     WaveAIEnableTelemetryCommand(client: WshClient, opts?: RpcOpts): Promise<void> {
         return client.wshRpcCall("waveaienabletelemetry", null, opts);
+    }
+
+    // command "waveaitoolapprove" [call]
+    WaveAIToolApproveCommand(client: WshClient, data: CommandWaveAIToolApproveData, opts?: RpcOpts): Promise<void> {
+        return client.wshRpcCall("waveaitoolapprove", data, opts);
     }
 
     // command "waveinfo" [call]
