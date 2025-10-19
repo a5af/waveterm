@@ -6,6 +6,45 @@ const path = require("path");
 const windowsShouldSign = !!process.env.SM_CODE_SIGNING_CERT_SHA1_HASH;
 
 /**
+ * Verify that required build artifacts exist before packaging
+ * @throws {Error} if required files are missing
+ */
+function verifyRequiredArtifacts() {
+    const version = pkg.version;
+    const requiredFiles = [
+        "dist/main/index.js",
+        "dist/bin/wavesrv.x64.exe", // Windows wavesrv
+        `dist/bin/wsh-${version}-windows.x64.exe`, // Windows wsh (versioned)
+    ];
+
+    const missingFiles = [];
+    for (const file of requiredFiles) {
+        if (!fs.existsSync(path.resolve(__dirname, file))) {
+            missingFiles.push(file);
+        }
+    }
+
+    if (missingFiles.length > 0) {
+        const errorMsg = `
+❌ BUILD FAILED: Required artifacts are missing!
+
+Missing files:
+${missingFiles.map((f) => `  - ${f}`).join("\n")}
+
+Before packaging, you must:
+1. Build the frontend: npm run build:prod
+2. Build the Go binaries: task build (or go build the wavesrv/wsh binaries)
+
+The package cannot be created without these critical files.
+`;
+        throw new Error(errorMsg);
+    }
+}
+
+// Run verification before configuration is used
+verifyRequiredArtifacts();
+
+/**
  * @type {import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
  */
@@ -19,8 +58,7 @@ const config = {
     nodeGypRebuild: false,
     electronCompile: false,
     files: [
-        "!**/*", // Start with excluding everything (override electron-builder defaults)
-        "dist/**/*", // Include all dist files explicitly (including bin for asarUnpack)
+        "dist/**/*", // Include all dist files
         "package.json", // Include package.json
     ],
     directories: {
