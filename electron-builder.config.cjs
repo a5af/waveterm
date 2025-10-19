@@ -60,12 +60,18 @@ const config = {
     files: [
         "dist/**/*",
         "package.json",
+        // Exclude unnecessary locale files to reduce build size (~35-40MB savings)
+        "!**/locales/**/*",
+        "**/locales/en-US.pak", // Only include English locale
+        // Exclude cross-platform wsh binaries to reduce build size (~84MB savings)
+        "!dist/bin/wsh-*-darwin.*",
+        "!dist/bin/wsh-*-linux.*",
     ],
     directories: {
         output: "make",
     },
     asarUnpack: [
-        "dist/bin/**/*", // wavesrv and wsh binaries
+        "dist/bin/**/*", // wavesrv and wsh binaries (Windows only after filtering)
         "dist/docsite/**/*", // the static docsite
     ],
     mac: {

@@ -78,6 +78,7 @@ export default defineConfig({
         root: ".",
         build: {
             target: NODE,
+            sourcemap: false, // Disable source maps for production builds
             rollupOptions: {
                 input: {
                     index: "emain/emain.ts",
@@ -103,7 +104,7 @@ export default defineConfig({
         root: ".",
         build: {
             target: NODE,
-            sourcemap: true,
+            sourcemap: false, // Disable source maps for production builds
             rollupOptions: {
                 input: {
                     index: "emain/preload.ts",
@@ -124,7 +125,7 @@ export default defineConfig({
         root: ".",
         build: {
             target: CHROME,
-            sourcemap: true,
+            sourcemap: false, // Disable source maps for production builds
             outDir: "dist/frontend",
             rollupOptions: {
                 input: {
