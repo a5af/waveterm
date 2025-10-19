@@ -57,9 +57,24 @@ const config = {
     npmRebuild: false,
     nodeGypRebuild: false,
     electronCompile: false,
+    asar: false, // TEMPORARY: Disable ASAR to workaround packaging bug (see BUILD_INVESTIGATION_SPEC.md)
     files: [
-        "dist/**/*", // Include all dist files
-        "package.json", // Include package.json
+        "dist/**/*",
+        "package.json",
+        "!**/*",           // Exclude everything
+        "dist/**/*",       // Then include dist (must come after exclusion)
+        "package.json",    // And package.json
+        "!*.md",           // Exclude markdown files
+        "!*.go",           // Exclude Go source
+        "!*.ts",           // Exclude TypeScript source
+        "!cmd/**/*",       // Exclude cmd directory
+        "!pkg/**/*",       // Exclude pkg directory
+        "!frontend/**/*",  // Exclude frontend source
+        "!emain/**/*",     // Exclude emain source
+        "!build/**/*",     // Exclude build scripts
+        "!.vscode/**/*",   // Exclude VSCode config
+        "!.roo/**/*",      // Exclude .roo
+        "!_temp/**/*",     // Exclude _temp
     ],
     directories: {
         output: "make",
