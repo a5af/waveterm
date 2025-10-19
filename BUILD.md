@@ -92,10 +92,18 @@ The first time you clone the repo, you'll need to run the following to load the 
 ```sh
 task init
 ```
-
 ## Build and Run
 
 All the methods below will install Node and Go dependencies when they run the first time. All these should be run from within the Git repository.
+
+> [!WARNING]
+> **For Development: Use `task dev` Only!**
+>
+> - During development, **ALWAYS** use `task dev` to run the app
+> - **DO NOT** launch WaveTerm from the `make/` directory during development
+> - The packaged app in `make/` is **NOT automatically updated** when you make code changes
+> - Launching a stale build will cause crashes like "wavesrv.x64.exe ENOENT"
+> - Only use `task package` when you need to create a final distributable installer/archive
 
 ### Development server
 
@@ -104,6 +112,8 @@ Run the following command to build the app and run it via Vite's development ser
 ```sh
 task dev
 ```
+
+**This is the recommended way to run WaveTerm during development.**
 
 ### Standalone
 
@@ -115,11 +125,13 @@ task start
 
 ### Packaged
 
-Run the following command to generate a production build and package it. This lets you install the app locally. All artifacts will be placed in `make/`.
+Run the following command to generate a production build and package it. This creates distributable installers/archives for installation. All artifacts will be placed in `make/`.
 
 ```sh
 task package
 ```
+
+**Note:** This is for creating final packages (installers, zip files, etc.), not for development. After running this, you can install/extract the package to test the production build.
 
 If you're on Linux ARM64, run the following:
 
