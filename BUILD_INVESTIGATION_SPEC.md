@@ -798,25 +798,42 @@ npx asar extract dist/win-unpacked/resources/app.asar /tmp/extracted-asar
 
 ## Conclusion
 
-This investigation uncovered a **critical electron-builder packaging bug** that prevents WaveTerm from being packaged into distributable formats. While all build artifacts are correctly generated, the packaging step creates corrupt archives that include the source tree instead of the built dist/ directory.
+This investigation uncovered a **critical electron-builder packaging bug** that was successfully resolved through version upgrade and configuration fixes.
 
-**Immediate Impact**:
-- ❌ Cannot create portable/installer packages
+**Resolution Summary** (2025-10-18):
+- ✅ Upgraded electron-builder from v26.0.12 to v26.1.0
+- ✅ Identified configuration loading issue (package.json vs electron-builder.config.cjs)
+- ✅ Added explicit `--config electron-builder.config.cjs` flag to packaging commands
+- ✅ Verified packaging creates correct ASAR with dist/main/index.js
+- ✅ Verified Wave.exe launches successfully from packaged build
+
+**Root Causes**:
+1. electron-builder v26.0.12 had node-module-collector bug (GitHub #9020, fixed in v26.0.17)
+2. electron-builder defaulted to loading config from package.json "build" field instead of .config.cjs file
+
+**Working Command**:
+```bash
+npx electron-builder --config electron-builder.config.cjs --win zip -p never
+```
+
+**Impact Summary**:
+- ✅ Can now create portable/installer packages
 - ✅ Development workflow via `task dev` remains functional
 - ✅ Build artifact verification prevents incomplete packages
 - ✅ Documentation improvements prevent common mistakes
 
-**Required Next Steps**:
-1. Implement ASAR disable workaround to unblock packaging
-2. Investigate electron-builder configuration more deeply
-3. Consider alternative packaging strategies
-4. Update remaining version references in documentation
+**Completed Actions**:
+1. ✅ Upgraded electron-builder to latest version
+2. ✅ Updated Taskfile.yml to use explicit config path
+3. ✅ Verified packaging creates correct archives
+4. ✅ Documented fix in ELECTRON_BUILDER_BUG.md
 
-**Long-term Health**:
-The build system needs comprehensive hardening with automated validation, integrity checks, and better developer documentation to prevent similar issues in the future.
+**Remaining Tasks**:
+1. Update version references in documentation (0.11.x → 0.12.2)
+2. Test packaging on other platforms (macOS, Linux)
 
 ---
 
-**Document Status**: DRAFT - Pending packaging resolution
-**Next Review**: After packaging bug is resolved
+**Document Status**: RESOLVED
+**Resolution Date**: 2025-10-18 22:11 UTC
 **Owner**: Build System Team

@@ -286,36 +286,58 @@ Potentially related electron-builder GitHub issues:
 
 ---
 
-## Current Status
+## Resolution
 
-**Build System**: ❌ **COMPLETELY BROKEN**
+**Date**: 2025-10-18 22:11 UTC
+**Status**: ✅ **RESOLVED**
 
-Cannot create distributable packages until this is resolved.
+### Root Cause
 
-**Temporary Development Workaround**:
-Use `task dev` (npm run dev) for development - this works fine.
+Two issues were identified:
 
-**Blocking**:
-- All release packaging
-- Portable builds
-- Installer creation
-- CI/CD builds
+1. **Configuration Loading Issue**: electron-builder was loading configuration from `package.json` (`"build"` field) instead of `electron-builder.config.cjs`
+2. **Version Bug**: electron-builder v26.0.12 had a bug with node-module-collector (GitHub issue #9020) fixed in v26.0.17
+
+### Solution
+
+1. **Upgraded electron-builder** from v26.0.12 to v26.1.0
+2. **Specify config explicitly**: Use `--config electron-builder.config.cjs` flag when running electron-builder
+
+### Working Command
+
+```bash
+npx electron-builder --config electron-builder.config.cjs --win zip -p never
+```
+
+### Verification
+
+```bash
+# Package built successfully
+make/win-unpacked/Wave.exe  # ✅ Launches successfully
+make/Wave-win32-x64-0.12.2.zip  # ✅ Created
+
+# ASAR contents verified
+npx asar list make/win-unpacked/resources/app.asar
+# ✅ Contains \dist\main\index.js
+# ✅ Contains \package.json
+# ✅ Contains all required files
+# ✅ No source tree pollution
+
+# Application launches successfully
+tasklist | findstr Wave.exe
+# Wave.exe      42112  # ✅ Running
+```
 
 ---
 
-## Next Session Action Items
+## Lessons Learned
 
-1. Create .npmignore with comprehensive exclusions
-2. Test packaging with .npmignore approach
-3. If .npmignore works, document as workaround
-4. If .npmignore fails, try electron-builder downgrade
-5. If downgrade works, lock version and document
-6. If downgrade fails, implement staging script approach
-7. File detailed bug report upstream with reproduction
+1. **Always specify config file explicitly** when using electron-builder with `.config.cjs`
+2. **Check electron-builder version** - GitHub issue #9020 was a known bug affecting Windows packaging
+3. **Test asar contents** using `npx asar list` to verify packaging
+4. **Upgrade dependencies** when packaging issues occur - bug was fixed 5 versions ago
 
 ---
 
-**Priority**: **P0 - CRITICAL**
-**Assignee**: Build System Team
-**Estimated Fix Time**: 4-8 hours (with workaround)
-**Estimated Root Cause Fix**: Unknown (upstream dependency)
+**Priority**: ~~P0 - CRITICAL~~ **RESOLVED**
+**Resolution Time**: 2 hours (investigation + fix)
