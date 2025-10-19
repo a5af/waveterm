@@ -30,14 +30,14 @@ if (isDevVite) {
 /**
  * Parse CLI arguments for multi-instance support (must be done early, before paths are set).
  *
- * By default, Wave runs in multi-instance mode with auto-generated instance IDs.
- * Use --single-instance flag to enforce only one instance can run at a time.
+ * By default, Wave runs in single-instance mode (persistent settings).
+ * Use --multi-instance flag to run with auto-generated instance IDs.
  * Use --instance=<id> to specify a custom instance name.
  *
  * Usage:
- *   Wave.exe                        → Multi-instance with auto-generated ID (waveterm-auto-{pid}-{timestamp}/Data)
+ *   Wave.exe                        → Single-instance mode (waveterm/Data, persistent settings)
  *   Wave.exe --instance=test        → Multi-instance with custom ID (waveterm-test/Data)
- *   Wave.exe --single-instance      → Single-instance mode (waveterm/Data, enforces one instance)
+ *   Wave.exe --multi-instance       → Multi-instance with auto-generated ID (waveterm-auto-{pid}-{timestamp}/Data)
  *
  * Each multi-instance gets:
  *   - Isolated data directory (with its own wave.lock file)
@@ -49,10 +49,14 @@ if (isDevVite) {
 function parseInstanceMode(): { isSingleInstance: boolean; instanceId: string | null } {
     const args = process.argv.slice(1);
 
-    // Check for explicit --single-instance flag
+    // Check for explicit --multi-instance flag
     for (let i = 0; i < args.length; i++) {
-        if (args[i] === "--single-instance") {
-            return { isSingleInstance: true, instanceId: null };
+        if (args[i] === "--multi-instance") {
+            // Generate auto instance ID
+            const pid = process.pid;
+            const timestamp = Date.now();
+            const autoInstanceId = `auto-${pid}-${timestamp}`;
+            return { isSingleInstance: false, instanceId: autoInstanceId };
         }
     }
 
@@ -67,11 +71,8 @@ function parseInstanceMode(): { isSingleInstance: boolean; instanceId: string | 
         }
     }
 
-    // Default: multi-instance mode with auto-generated unique instance ID
-    const pid = process.pid;
-    const timestamp = Date.now();
-    const autoInstanceId = `auto-${pid}-${timestamp}`;
-    return { isSingleInstance: false, instanceId: autoInstanceId };
+    // Default: single-instance mode for persistent settings
+    return { isSingleInstance: true, instanceId: null };
 }
 
 const instanceMode = parseInstanceMode();
