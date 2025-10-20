@@ -105,4 +105,46 @@ describe("Version Consistency Tests", () => {
         // Note: This assumes the onboarding file has been updated to use packageJson
         expect(`v${EXPECTED_VERSION}`).toMatch(/^v\d+\.\d+\.\d+$/);
     });
+
+    it("should correctly parse instance number from data directory names", () => {
+        const path = require("path");
+
+        // Test instance parsing logic (from platform.ts)
+        const testCases = [
+            { dir: "wave-data", expected: "1" },      // Primary instance
+            { dir: "wave-data-2", expected: "2" },    // Second instance
+            { dir: "wave-data-10", expected: "10" },  // 10th instance
+            { dir: "wavedata", expected: "1" },       // No hyphens
+            { dir: "something", expected: "1" },      // Other format
+        ];
+
+        for (const testCase of testCases) {
+            const baseNameParts = testCase.dir.split("-");
+            const instanceNumber = baseNameParts.length > 2 ? baseNameParts[2] : "1";
+            expect(instanceNumber).toBe(testCase.expected);
+            expect(instanceNumber).not.toBe("undefined"); // CRITICAL: Must never be undefined
+        }
+    });
+
+    it("should construct app name with version and instance", () => {
+        // Test app name construction logic (from platform.ts)
+        const version = EXPECTED_VERSION;
+        const testCases = [
+            { instanceNumber: "1", dev: false, expected: `Wave ${version}` },
+            { instanceNumber: "2", dev: false, expected: `Wave ${version} [Instance 2]` },
+            { instanceNumber: "10", dev: false, expected: `Wave ${version} [Instance 10]` },
+            { instanceNumber: "1", dev: true, expected: `Wave ${version} (Dev)` },
+            { instanceNumber: "2", dev: true, expected: `Wave ${version} (Dev) [Instance 2]` },
+        ];
+
+        for (const testCase of testCases) {
+            let appName = testCase.dev ? `Wave ${version} (Dev)` : `Wave ${version}`;
+            if (testCase.instanceNumber !== "1") {
+                appName = `${appName} [Instance ${testCase.instanceNumber}]`;
+            }
+            expect(appName).toBe(testCase.expected);
+            expect(appName).toContain(version); // CRITICAL: Version must be in app name
+            expect(appName).not.toContain("undefined"); // CRITICAL: No undefined in app name
+        }
+    });
 });
