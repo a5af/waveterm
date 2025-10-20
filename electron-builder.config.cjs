@@ -11,10 +11,18 @@ const windowsShouldSign = !!process.env.SM_CODE_SIGNING_CERT_SHA1_HASH;
  */
 function verifyRequiredArtifacts() {
     const version = pkg.version;
+
+    // CRITICAL: All these files MUST exist before packaging
+    // Missing any of these will cause runtime failures
     const requiredFiles = [
-        "dist/main/index.js",
-        "dist/bin/wavesrv.x64.exe", // Windows wavesrv
-        `dist/bin/wsh-${version}-windows.x64.exe`, // Windows wsh (versioned)
+        // Frontend
+        "dist/main/index.js",           // Main process entry point
+        "dist/frontend/index.html",     // Frontend UI
+
+        // Backend binaries (versioned for correct shell integration)
+        "dist/bin/wavesrv.x64.exe",                    // Backend server
+        `dist/bin/wsh-${version}-windows.x64.exe`,     // Shell integration (x64) - REQUIRED for PowerShell
+        `dist/bin/wsh-${version}-windows.arm64.exe`,   // Shell integration (ARM64)
     ];
 
     const missingFiles = [];
@@ -31,14 +39,20 @@ function verifyRequiredArtifacts() {
 Missing files:
 ${missingFiles.map((f) => `  - ${f}`).join("\n")}
 
+CRITICAL: wsh binaries MUST match package.json version (${version})
+Without versioned wsh, shell integration will fail with "wsh not found" errors.
+
 Before packaging, you must:
 1. Build the frontend: npm run build:prod
-2. Build the Go binaries: task build (or go build the wavesrv/wsh binaries)
+2. Build the Go binaries: task build:backend
+3. Verify versions match: bash scripts/verify-version.sh
 
 The package cannot be created without these critical files.
 `;
         throw new Error(errorMsg);
     }
+
+    console.log("✓ All required artifacts present for version", version);
 }
 
 // Run verification before configuration is used

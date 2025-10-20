@@ -67,7 +67,7 @@ export async function showMultiInstanceDialog(): Promise<void> {
                 "launch Wave with the --instance flag:\n\n" +
                 "Example:\n" +
                 "  Wave.exe --instance=test\n" +
-                "  Wave.exe --instance=v0.12.2\n\n" +
+                "  Wave.exe --instance=dev\n\n" +
                 "Each instance will have its own isolated data while sharing your settings.\n\n" +
                 "Click 'Learn More' for documentation on multi-instance mode.",
             noLink: true,
