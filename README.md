@@ -160,6 +160,58 @@ Want to provide input to our future releases? Connect with us on [Discord](https
 
 See [Building Wave Terminal](BUILD.md).
 
+## 🤖 For AI Agents / Automated Development
+
+**IMPORTANT: Work directly in the main repo at `D:/Code/waveterm`**
+
+Since only one agent works on WaveTerm at a time, there's no need to use worktrees or create separate clones. **Always work in the main repository** to avoid version fragmentation and confusion.
+
+### Before You Start
+
+1. **Check version:** Read [VERSION_HISTORY.md](./VERSION_HISTORY.md) to understand current state
+2. **Check branch:** Run `git branch` to see your current branch
+3. **Pull latest:** Run `git pull origin <branch-name>` to get latest changes
+4. **Read docs:** Review [CLAUDE.md](./CLAUDE.md) for development workflow and critical warnings
+
+### Development Workflow
+
+```bash
+# 1. Start development server (required for all code changes)
+task dev
+
+# 2. Make your changes (TypeScript/React hot reloads automatically)
+
+# 3. For Go backend changes, rebuild and restart:
+task build
+# Then kill and restart task dev
+
+# 4. After significant changes, bump version:
+./bump-version.sh patch --message "Your change description"
+# or on Windows:
+./bump-version.ps1 patch -Message "Your change description"
+
+# 5. Push to remote
+git push origin <branch-name> --tags
+```
+
+### Critical Rules
+
+- ✅ **DO** work in `D:/Code/waveterm` (main repo)
+- ✅ **DO** use `task dev` for development
+- ✅ **DO** read VERSION_HISTORY.md before starting
+- ✅ **DO** use bump-version scripts for version changes
+- ❌ **DON'T** create worktrees or additional clones
+- ❌ **DON'T** run packaged builds during development (use `task dev`)
+- ❌ **DON'T** manually edit version numbers in multiple files
+
+### Quick Reference
+
+- **Main repo:** `D:/Code/waveterm` ← **Work here!**
+- **Current version:** Check [VERSION_HISTORY.md](./VERSION_HISTORY.md)
+- **Development guide:** [CLAUDE.md](./CLAUDE.md)
+- **Build guide:** [BUILD.md](./BUILD.md)
+- **Version bump:** `./bump-version.sh` or `./bump-version.ps1`
+
 ## Contributing
 
 ### Fork-Specific Issues
