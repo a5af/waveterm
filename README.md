@@ -55,45 +55,74 @@ This fork includes the following enhancements over the upstream Wave Terminal:
 
 ---
 
-## 🔄 Version Management (For Developers & Agents)
+## 🔄 Version Management (⚠️ CRITICAL - Read This!)
 
-### Quick Version Bump
+**Versioning has been a major blocker in the past. This section is ESSENTIAL reading.**
 
-This fork uses automated version bumping across all configs and docs:
+### 📍 Why Version Management Matters
+
+Version consistency across multiple files (package.json, binaries, docs) has caused build failures and deployment issues. **Always use the version bump script** - never edit versions manually.
+
+### ✅ Quick Version Bump (One Command!)
+
+This fork uses **automated version bumping** that updates ALL version areas:
+
+**macOS/Linux (Bash) - RECOMMENDED:**
+```bash
+./bump-version.sh patch                               # 0.12.10 -> 0.12.11
+./bump-version.sh minor --message "Add new feature"   # 0.12.10 -> 0.13.0
+./bump-version.sh 0.13.5 --message "Specific version" # Set exact version
+```
 
 **Windows (PowerShell):**
 ```powershell
-./bump-version.ps1 patch                              # 0.12.3 -> 0.12.4
-./bump-version.ps1 minor -Agent agent2                # 0.12.3 -> 0.13.0
-./bump-version.ps1 0.12.10 -Message "Add new feature" # Set specific version
+./bump-version.ps1 patch                              # 0.12.10 -> 0.12.11
+./bump-version.ps1 minor -Message "Add new feature"   # 0.12.10 -> 0.13.0
 ```
 
-**macOS/Linux (Bash):**
-```bash
-./bump-version.sh patch                               # 0.12.3 -> 0.12.4
-./bump-version.sh minor --agent agent2                # 0.12.3 -> 0.13.0
-./bump-version.sh 0.12.10 --message "Add new feature" # Set specific version
-```
+### 🔍 What Gets Updated Automatically
 
-The script automatically updates:
+The script updates **ALL** of these:
 - ✅ `package.json` - Main version source
 - ✅ `package-lock.json` - Locked dependencies
-- ✅ `VERSION_HISTORY.md` - Fork version tracking
-- ✅ Git commit with version bump message
-- ✅ Git tag (e.g., `v0.12.4-fork`)
+- ✅ `VERSION_HISTORY.md` - Fork changelog with date/agent/changes
+- ✅ Git commit + tag (e.g., `v0.12.11-fork`)
+- ✅ **Verification check** - Ensures consistency across codebase
 
-### Understanding Fork vs Upstream
+### ⚙️ After Version Bump - Important!
 
-- **Upstream:** Original [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm) repo (currently v0.12.0)
-- **Fork:** This enhanced [a5af/waveterm](https://github.com/a5af/waveterm) repo (currently v0.12.3-fork)
-- **Version History:** See [VERSION_HISTORY.md](./VERSION_HISTORY.md) for complete fork changelog
+```bash
+# 1. Rebuild backend binaries with new version
+task build:backend
 
-### For New Agents
+# 2. Verify everything is consistent
+bash scripts/verify-version.sh
 
-Always check [VERSION_HISTORY.md](./VERSION_HISTORY.md) first to understand:
-- Current fork version
-- What features were added in each version
-- Which agent worked on what
+# 3. Push changes
+git push origin <branch-name> --tags
+```
+
+### 🚨 Common Mistakes to Avoid
+
+❌ **DON'T** manually edit version in package.json
+❌ **DON'T** forget to rebuild binaries after version bump
+❌ **DON'T** skip version verification
+✅ **DO** use bump-version.sh script
+✅ **DO** run `task build:backend` after bumping
+✅ **DO** check VERSION_HISTORY.md is updated
+
+### 📚 Version Information
+
+- **Current Version:** Check [VERSION_HISTORY.md](./VERSION_HISTORY.md) (always up-to-date)
+- **Upstream:** Original [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm) (base: v0.12.0)
+- **Fork:** This enhanced [a5af/waveterm](https://github.com/a5af/waveterm) (current: see VERSION_HISTORY.md)
+
+### 🤖 For New Agents
+
+**BEFORE starting work:**
+1. Read [VERSION_HISTORY.md](./VERSION_HISTORY.md) - see what's been done
+2. Check [CLAUDE.md](./CLAUDE.md) - development workflow
+3. Use `bash scripts/verify-version.sh` - verify version consistency
 
 ---
 

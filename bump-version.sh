@@ -171,10 +171,21 @@ fi
 echo ""
 success "Version bump complete: $CURRENT_VERSION -> $NEW_VERSION"
 echo ""
+
+# Run version verification
+info "Running version verification..."
+if bash scripts/verify-version.sh; then
+    success "Version verification passed"
+else
+    warn "Version verification found issues (see above)"
+fi
+
+echo ""
 info "Next steps:"
-echo "  1. Review changes: git show HEAD"
+echo "  1. Rebuild binaries: task build:backend (to update wsh version)"
+echo "  2. Review changes: git show HEAD"
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-echo "  2. Push to remote: git push origin $BRANCH"
+echo "  3. Push to remote: git push origin $BRANCH"
 if [[ "$NO_TAG" != true ]]; then
-    echo "  3. Push tags: git push origin --tags"
+    echo "  4. Push tags: git push origin --tags"
 fi

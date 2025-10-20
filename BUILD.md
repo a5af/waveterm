@@ -2,6 +2,29 @@
 
 These instructions are for setting up dependencies and building Wave Terminal from source on macOS, Linux, and Windows.
 
+---
+
+## ⚠️ CRITICAL: Version Management
+
+**Before building or releasing, ensure version consistency!**
+
+### Quick Version Bump
+
+```bash
+# Bump version (automatically updates all files)
+./bump-version.sh patch --message "Your change description"
+
+# Rebuild binaries with new version
+task build:backend
+
+# Verify consistency
+bash scripts/verify-version.sh
+```
+
+**See [README.md](README.md#-version-management--critical---read-this) for full version management guide.**
+
+---
+
 ## Prerequisites
 
 ### OS-specific dependencies
@@ -95,6 +118,14 @@ task init
 ## Build and Run
 
 All the methods below will install Node and Go dependencies when they run the first time. All these should be run from within the Git repository.
+
+### 🎯 Before You Start
+
+**Important workflow reminders:**
+1. ✅ **Development:** Always use `task dev` (hot reload, auto-updates)
+2. ❌ **Never** launch from `make/` during development (stale build!)
+3. ✅ **Version changes:** Use `./bump-version.sh` then `task build:backend`
+4. ✅ **Packaging:** Use `task package` only for final distributables
 
 > [!WARNING]
 > **For Development: Use `task dev` Only!**
