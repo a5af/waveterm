@@ -53,6 +53,79 @@ This fork includes the following enhancements over the upstream Wave Terminal:
 - Clear path isolation examples
 - Usage patterns and best practices
 
+---
+
+## 🔄 Version Management (⚠️ CRITICAL - Read This!)
+
+**Versioning has been a major blocker in the past. This section is ESSENTIAL reading.**
+
+### 📍 Why Version Management Matters
+
+Version consistency across multiple files (package.json, binaries, docs) has caused build failures and deployment issues. **Always use the version bump script** - never edit versions manually.
+
+### ✅ Quick Version Bump (One Command!)
+
+This fork uses **automated version bumping** that updates ALL version areas:
+
+**macOS/Linux (Bash) - RECOMMENDED:**
+```bash
+./bump-version.sh patch                               # 0.12.10 -> 0.12.11
+./bump-version.sh minor --message "Add new feature"   # 0.12.10 -> 0.13.0
+./bump-version.sh 0.13.5 --message "Specific version" # Set exact version
+```
+
+**Windows (PowerShell):**
+```powershell
+./bump-version.ps1 patch                              # 0.12.10 -> 0.12.11
+./bump-version.ps1 minor -Message "Add new feature"   # 0.12.10 -> 0.13.0
+```
+
+### 🔍 What Gets Updated Automatically
+
+The script updates **ALL** of these:
+- ✅ `package.json` - Main version source
+- ✅ `package-lock.json` - Locked dependencies
+- ✅ `VERSION_HISTORY.md` - Fork changelog with date/agent/changes
+- ✅ Git commit + tag (e.g., `v0.12.11-fork`)
+- ✅ **Verification check** - Ensures consistency across codebase
+
+### ⚙️ After Version Bump - Important!
+
+```bash
+# 1. Rebuild backend binaries with new version
+task build:backend
+
+# 2. Verify everything is consistent
+bash scripts/verify-version.sh
+
+# 3. Push changes
+git push origin <branch-name> --tags
+```
+
+### 🚨 Common Mistakes to Avoid
+
+❌ **DON'T** manually edit version in package.json
+❌ **DON'T** forget to rebuild binaries after version bump
+❌ **DON'T** skip version verification
+✅ **DO** use bump-version.sh script
+✅ **DO** run `task build:backend` after bumping
+✅ **DO** check VERSION_HISTORY.md is updated
+
+### 📚 Version Information
+
+- **Current Version:** Check [VERSION_HISTORY.md](./VERSION_HISTORY.md) (always up-to-date)
+- **Upstream:** Original [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm) (base: v0.12.0)
+- **Fork:** This enhanced [a5af/waveterm](https://github.com/a5af/waveterm) (current: see VERSION_HISTORY.md)
+
+### 🤖 For New Agents
+
+**BEFORE starting work:**
+1. Read [VERSION_HISTORY.md](./VERSION_HISTORY.md) - see what's been done
+2. Check [CLAUDE.md](./CLAUDE.md) - development workflow
+3. Use `bash scripts/verify-version.sh` - verify version consistency
+
+---
+
 Modern development involves constantly switching between terminals and browsers - checking documentation, previewing files, monitoring systems, and using AI tools. Wave brings these graphical tools directly into the terminal, letting you control them from the command line. This means you can stay in your terminal workflow while still having access to the visual interfaces you need.
 
 ![WaveTerm Screenshot](./assets/wave-screenshot.webp)
@@ -115,6 +188,58 @@ Want to provide input to our future releases? Connect with us on [Discord](https
 ## Building from Source
 
 See [Building Wave Terminal](BUILD.md).
+
+## 🤖 For AI Agents / Automated Development
+
+**IMPORTANT: Work directly in the main repo at `D:/Code/waveterm`**
+
+Since only one agent works on WaveTerm at a time, there's no need to use worktrees or create separate clones. **Always work in the main repository** to avoid version fragmentation and confusion.
+
+### Before You Start
+
+1. **Check version:** Read [VERSION_HISTORY.md](./VERSION_HISTORY.md) to understand current state
+2. **Check branch:** Run `git branch` to see your current branch
+3. **Pull latest:** Run `git pull origin <branch-name>` to get latest changes
+4. **Read docs:** Review [CLAUDE.md](./CLAUDE.md) for development workflow and critical warnings
+
+### Development Workflow
+
+```bash
+# 1. Start development server (required for all code changes)
+task dev
+
+# 2. Make your changes (TypeScript/React hot reloads automatically)
+
+# 3. For Go backend changes, rebuild and restart:
+task build
+# Then kill and restart task dev
+
+# 4. After significant changes, bump version:
+./bump-version.sh patch --message "Your change description"
+# or on Windows:
+./bump-version.ps1 patch -Message "Your change description"
+
+# 5. Push to remote
+git push origin <branch-name> --tags
+```
+
+### Critical Rules
+
+- ✅ **DO** work in `D:/Code/waveterm` (main repo)
+- ✅ **DO** use `task dev` for development
+- ✅ **DO** read VERSION_HISTORY.md before starting
+- ✅ **DO** use bump-version scripts for version changes
+- ❌ **DON'T** create worktrees or additional clones
+- ❌ **DON'T** run packaged builds during development (use `task dev`)
+- ❌ **DON'T** manually edit version numbers in multiple files
+
+### Quick Reference
+
+- **Main repo:** `D:/Code/waveterm` ← **Work here!**
+- **Current version:** Check [VERSION_HISTORY.md](./VERSION_HISTORY.md)
+- **Development guide:** [CLAUDE.md](./CLAUDE.md)
+- **Build guide:** [BUILD.md](./BUILD.md)
+- **Version bump:** `./bump-version.sh` or `./bump-version.ps1`
 
 ## Contributing
 

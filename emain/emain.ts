@@ -68,8 +68,17 @@ import {
     unamePlatform,
 } from "./platform";
 import { configureAutoUpdater, updater } from "./updater";
+import { initCrashReporter } from "./crash-reporter";
+import { initCrashHandlers } from "./crash-handlers";
+import { startHeartbeat, stopHeartbeat } from "./heartbeat";
+import { checkForPreviousCrash, showRecoveryModal } from "./crash-recovery";
+import { trackEvent } from "./crash-breadcrumbs";
+import { showCrashDialog } from "./crash-handler";
 
 const electronApp = electron.app;
+
+// Initialize crash reporter as early as possible
+initCrashReporter();
 
 const waveDataDir = getWaveDataDir();
 const waveConfigDir = getWaveConfigDir();
@@ -612,6 +621,7 @@ electronApp.on("window-all-closed", () => {
 electronApp.on("before-quit", (e) => {
     setGlobalIsQuitting(true);
     updater?.stop();
+    stopHeartbeat(); // Mark clean exit
     if (unamePlatform == "win32") {
         // win32 doesn't have a SIGINT, so we just let electron die, which
         // ends up killing wavesrv via closing it's stdin.
@@ -652,7 +662,7 @@ process.on("SIGTERM", () => {
     electronApp.quit();
 });
 let caughtException = false;
-process.on("uncaughtException", (error) => {
+process.on("uncaughtException", async (error) => {
     if (caughtException) {
         return;
     }
@@ -667,7 +677,25 @@ process.on("uncaughtException", (error) => {
     caughtException = true;
     console.log("Uncaught Exception, shutting down: ", error);
     console.log("Stack Trace:", error.stack);
-    // Optionally, handle cleanup or exit the app
+
+    trackEvent("uncaughtException", { message: error.message, stack: error.stack });
+
+    // Show crash dialog with full details
+    await showCrashDialog(error);
+
+    electronApp.quit();
+});
+
+process.on("unhandledRejection", async (reason, promise) => {
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    console.log("Unhandled Promise Rejection:", error);
+    console.log("Stack Trace:", error.stack);
+
+    trackEvent("unhandledRejection", { reason: String(reason) });
+
+    // Show crash dialog for unhandled rejections too
+    await showCrashDialog(error);
+
     electronApp.quit();
 });
 
@@ -714,6 +742,19 @@ async function appMain() {
     console.log("wavesrv ready signal received", ready, Date.now() - startTs, "ms");
     await electronApp.whenReady();
     configureAuthKeyRequestInjection(electron.session.defaultSession);
+
+    // Initialize crash handlers for GPU/renderer crashes
+    initCrashHandlers();
+
+    // Check for previous crash and show recovery modal if needed
+    const previousCrash = checkForPreviousCrash();
+    if (previousCrash) {
+        console.log("Previous crash detected:", previousCrash.type);
+        await showRecoveryModal(previousCrash);
+    }
+
+    // Start heartbeat monitor to detect external kills
+    startHeartbeat();
 
     await sleep(10); // wait a bit for wavesrv to be ready
     try {

@@ -404,7 +404,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            border: 2px solid transparent;
+            border: 2px solid #ffffff;
             pointer-events: none;
             padding: 2px;
             border-radius: var(--block-border-radius);
@@ -436,12 +436,16 @@
         &.block-focused {
             .block-mask {
                 border: 2px solid var(--accent-color);
+                outline: 2px solid var(--accent-color);
+                outline-offset: -2px;
+                z-index: calc(var(--zindex-block-mask-inner) + 1);
             }
 
             &.block-no-highlight,
             &.block-preview {
                 .block-mask {
                     border: 2px solid rgb(from var(--border-color) r g b / 10%) !important;
+                    outline: none;
                 }
             }
         }

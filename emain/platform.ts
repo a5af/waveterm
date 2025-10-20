@@ -28,76 +28,129 @@ if (isDevVite) {
 }
 
 /**
- * Parse CLI arguments for multi-instance support (must be done early, before paths are set).
+ * Find an available data directory for this instance (portable mode).
  *
- * By default, Wave runs in multi-instance mode with auto-generated instance IDs.
- * Use --single-instance flag to enforce only one instance can run at a time.
- * Use --instance=<id> to specify a custom instance name.
+ * Searches for unlocked data directories next to the executable:
+ * - wave-data/ (primary)
+ * - wave-data-2/, wave-data-3/, etc. (additional instances)
  *
- * Usage:
- *   Wave.exe                        → Multi-instance with auto-generated ID (waveterm-auto-{pid}-{timestamp}/Data)
- *   Wave.exe --instance=test        → Multi-instance with custom ID (waveterm-test/Data)
- *   Wave.exe --single-instance      → Single-instance mode (waveterm/Data, enforces one instance)
+ * If a directory doesn't exist, it's created by copying from wave-data.
+ * Directories are never deleted, allowing settings to persist across runs.
  *
- * Each multi-instance gets:
- *   - Isolated data directory (with its own wave.lock file)
- *   - Isolated SQLite databases
- *   - Shared config directory (inherits settings from main install)
+ * Example flow:
+ * - Launch 1: Uses wave-data/
+ * - Launch 2 (while 1 running): Copies to wave-data-2/ and uses it
+ * - Launch 3 (while 1&2 running): Copies to wave-data-3/ and uses it
+ * - Close all → Launch 1: Uses wave-data/ (settings preserved)
+ * - Launch 2: Uses wave-data-2/ (settings from last run preserved)
  *
- * @returns Object with isSingleInstance flag and optional instanceId
+ * @returns Path to the data directory to use
  */
-function parseInstanceMode(): { isSingleInstance: boolean; instanceId: string | null } {
-    const args = process.argv.slice(1);
+function findAvailableDataDirectory(): string {
+    const fs = require("fs");
+    const exeDir = path.dirname(app.getPath("exe"));
+    const primaryDataDir = path.join(exeDir, "wave-data");
 
-    // Check for explicit --single-instance flag
-    for (let i = 0; i < args.length; i++) {
-        if (args[i] === "--single-instance") {
-            return { isSingleInstance: true, instanceId: null };
+    // Helper to check if a directory is locked
+    function isDirectoryLocked(dirPath: string): boolean {
+        const lockFile = path.join(dirPath, "wave.lock");
+        if (!fs.existsSync(lockFile)) {
+            return false;
+        }
+
+        try {
+            // Try to read the lock file
+            const lockContent = fs.readFileSync(lockFile, "utf-8");
+            const lockData = JSON.parse(lockContent);
+            const pid = lockData.pid;
+
+            // Check if the process is still running
+            try {
+                process.kill(pid, 0); // Signal 0 checks if process exists without killing
+                return true; // Process exists, directory is locked
+            } catch (e) {
+                // Process doesn't exist, lock is stale
+                return false;
+            }
+        } catch (e) {
+            // Can't read lock file, assume not locked
+            return false;
         }
     }
 
-    // Check for optional --instance flag to name the instance
-    for (let i = 0; i < args.length; i++) {
-        if (args[i] === "--instance" && i + 1 < args.length) {
-            return { isSingleInstance: false, instanceId: args[i + 1] };
+    // Helper to copy directory recursively
+    function copyDirectorySync(src: string, dest: string) {
+        if (!fs.existsSync(dest)) {
+            fs.mkdirSync(dest, { recursive: true });
         }
-        if (args[i].startsWith("--instance=")) {
-            const id = args[i].substring("--instance=".length);
-            return { isSingleInstance: false, instanceId: id };
+
+        const entries = fs.readdirSync(src, { withFileTypes: true });
+
+        for (const entry of entries) {
+            const srcPath = path.join(src, entry.name);
+            const destPath = path.join(dest, entry.name);
+
+            if (entry.isDirectory()) {
+                copyDirectorySync(srcPath, destPath);
+            } else {
+                fs.copyFileSync(srcPath, destPath);
+            }
         }
     }
 
-    // Default: multi-instance mode with auto-generated unique instance ID
-    const pid = process.pid;
-    const timestamp = Date.now();
-    const autoInstanceId = `auto-${pid}-${timestamp}`;
-    return { isSingleInstance: false, instanceId: autoInstanceId };
+    // Try primary directory first
+    if (!isDirectoryLocked(primaryDataDir)) {
+        if (!fs.existsSync(primaryDataDir)) {
+            fs.mkdirSync(primaryDataDir, { recursive: true });
+            console.log(`Created primary data directory: ${primaryDataDir}`);
+        }
+        return primaryDataDir;
+    }
+
+    // Primary is locked, try numbered instances
+    for (let i = 2; i <= 100; i++) {
+        const dataDir = path.join(exeDir, `wave-data-${i}`);
+
+        if (!isDirectoryLocked(dataDir)) {
+            if (!fs.existsSync(dataDir)) {
+                // Clone from primary
+                console.log(`Cloning ${primaryDataDir} → ${dataDir}`);
+                copyDirectorySync(primaryDataDir, dataDir);
+            }
+            return dataDir;
+        }
+    }
+
+    // All 100 slots are locked
+    throw new Error("Too many Wave instances running (max 100)");
 }
 
-const instanceMode = parseInstanceMode();
-const instanceId = instanceMode.instanceId;
-const isMultiInstance = !instanceMode.isSingleInstance;
+// For backward compatibility with old paths (legacy/environment variable overrides)
+const waveDirName = isDev ? "waveterm-dev" : "waveterm";
+const waveConfigDirName = waveDirName; // Config uses same directory name
 
-const waveDirNamePrefix = "waveterm";
-let waveDirNameSuffix = isDev ? "dev" : "";
-// Config directory: multi-instance uses production config to inherit main install settings
-// Single-instance dev mode uses dev config
-const waveConfigDirName = isMultiInstance ? waveDirNamePrefix : `${waveDirNamePrefix}${waveDirNameSuffix ? `-${waveDirNameSuffix}` : ""}`;
-// Add instance ID to suffix for data directories only if multi-instance mode is enabled
-if (isMultiInstance) {
-    waveDirNameSuffix = waveDirNameSuffix ? `${waveDirNameSuffix}-${instanceId}` : instanceId;
-}
-const waveDirName = `${waveDirNamePrefix}${waveDirNameSuffix ? `-${waveDirNameSuffix}` : ""}`;
+// Find available data directory (portable mode - next to executable)
+const dataDirectory = findAvailableDataDirectory();
+const instanceNumber = path.basename(dataDirectory).includes("-")
+    ? path.basename(dataDirectory).split("-")[2]
+    : "1";
 
-const paths = envPaths("waveterm", { suffix: waveDirNameSuffix });
-
-// Set app name to include version and instance ID if in multi-instance mode
+// Set app name to include instance number
 const version = packageJson.version;
 let appName = isDev ? `Wave ${version} (Dev)` : `Wave ${version}`;
-if (isMultiInstance) {
-    appName = `${appName} [${instanceId}]`;
+if (instanceNumber !== "1") {
+    appName = `${appName} [Instance ${instanceNumber}]`;
 }
 app.setName(appName);
+
+// Override envPaths to use our portable directory
+const paths = {
+    data: dataDirectory,
+    config: path.join(dataDirectory, "config"),
+    cache: path.join(dataDirectory, "cache"),
+    log: path.join(dataDirectory, "logs"),
+    temp: path.join(dataDirectory, "temp"),
+};
 const unamePlatform = process.platform;
 const unameArch: string = process.arch;
 keyutil.setKeyUtilPlatform(unamePlatform);
@@ -321,9 +374,11 @@ async function callWithOriginalXdgCurrentDesktopAsync(callback: () => Promise<vo
 
 /**
  * Gets multi-instance information.
- * @returns Object containing isMultiInstance flag and instanceId (null if not in multi-instance mode)
+ * @returns Object containing isMultiInstance flag and instanceId
  */
 function getMultiInstanceInfo(): { isMultiInstance: boolean; instanceId: string | null } {
+    const isMultiInstance = instanceNumber !== "1";
+    const instanceId = isMultiInstance ? `instance-${instanceNumber}` : null;
     return { isMultiInstance, instanceId };
 }
 
