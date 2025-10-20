@@ -53,6 +53,50 @@ This fork includes the following enhancements over the upstream Wave Terminal:
 - Clear path isolation examples
 - Usage patterns and best practices
 
+---
+
+## 🔄 Version Management (For Developers & Agents)
+
+### Quick Version Bump
+
+This fork uses automated version bumping across all configs and docs:
+
+**Windows (PowerShell):**
+```powershell
+./bump-version.ps1 patch                              # 0.12.3 -> 0.12.4
+./bump-version.ps1 minor -Agent agent2                # 0.12.3 -> 0.13.0
+./bump-version.ps1 0.12.10 -Message "Add new feature" # Set specific version
+```
+
+**macOS/Linux (Bash):**
+```bash
+./bump-version.sh patch                               # 0.12.3 -> 0.12.4
+./bump-version.sh minor --agent agent2                # 0.12.3 -> 0.13.0
+./bump-version.sh 0.12.10 --message "Add new feature" # Set specific version
+```
+
+The script automatically updates:
+- ✅ `package.json` - Main version source
+- ✅ `package-lock.json` - Locked dependencies
+- ✅ `VERSION_HISTORY.md` - Fork version tracking
+- ✅ Git commit with version bump message
+- ✅ Git tag (e.g., `v0.12.4-fork`)
+
+### Understanding Fork vs Upstream
+
+- **Upstream:** Original [wavetermdev/waveterm](https://github.com/wavetermdev/waveterm) repo (currently v0.12.0)
+- **Fork:** This enhanced [a5af/waveterm](https://github.com/a5af/waveterm) repo (currently v0.12.3-fork)
+- **Version History:** See [VERSION_HISTORY.md](./VERSION_HISTORY.md) for complete fork changelog
+
+### For New Agents
+
+Always check [VERSION_HISTORY.md](./VERSION_HISTORY.md) first to understand:
+- Current fork version
+- What features were added in each version
+- Which agent worked on what
+
+---
+
 Modern development involves constantly switching between terminals and browsers - checking documentation, previewing files, monitoring systems, and using AI tools. Wave brings these graphical tools directly into the terminal, letting you control them from the command line. This means you can stay in your terminal workflow while still having access to the visual interfaces you need.
 
 ![WaveTerm Screenshot](./assets/wave-screenshot.webp)
