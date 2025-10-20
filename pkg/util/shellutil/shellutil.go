@@ -310,11 +310,10 @@ func initCustomShellStartupFilesInternal() error {
 	// copy the correct binary to bin
 	wshFullPath, err := GetLocalWshBinaryPath(wavebase.WaveVersion, runtime.GOOS, runtime.GOARCH)
 	if err != nil {
-		log.Printf("error (non-fatal), could not resolve wsh binary path: %v\n", err)
+		return fmt.Errorf("CRITICAL: could not resolve wsh binary path: %v", err)
 	}
 	if _, err := os.Stat(wshFullPath); err != nil {
-		log.Printf("error (non-fatal), could not resolve wsh binary %q: %v\n", wshFullPath, err)
-		return nil
+		return fmt.Errorf("CRITICAL: wsh binary not found at %q: %v", wshFullPath, err)
 	}
 	wshDstPath := filepath.Join(binDir, "wsh")
 	if runtime.GOOS == "windows" {
