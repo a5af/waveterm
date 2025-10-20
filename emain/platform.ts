@@ -127,6 +127,7 @@ function findAvailableDataDirectory(): string {
 
 // For backward compatibility with old paths (legacy/environment variable overrides)
 const waveDirName = isDev ? "waveterm-dev" : "waveterm";
+const waveConfigDirName = waveDirName; // Config uses same directory name
 
 // Find available data directory (portable mode - next to executable)
 const dataDirectory = findAvailableDataDirectory();
