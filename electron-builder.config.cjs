@@ -77,15 +77,12 @@ const config = {
         // Exclude unnecessary locale files to reduce build size (~35-40MB savings)
         "!**/locales/**/*",
         "**/locales/en-US.pak", // Only include English locale
-        // Exclude cross-platform wsh binaries to reduce build size (~84MB savings)
-        "!dist/bin/wsh-*-darwin.*",
-        "!dist/bin/wsh-*-linux.*",
     ],
     directories: {
         output: "make",
     },
     asarUnpack: [
-        "dist/bin/**/*", // wavesrv and wsh binaries (Windows only after filtering)
+        "dist/bin/**/*", // wavesrv and wsh binaries (platform-specific after filtering)
         "dist/docsite/**/*", // the static docsite
     ],
     mac: {
@@ -98,6 +95,11 @@ const config = {
                 target: "dmg",
                 arch: ["arm64", "x64"],
             },
+        ],
+        // macOS-specific files: exclude cross-platform wsh binaries
+        files: [
+            "!dist/bin/wsh-*-windows.*",  // Exclude Windows binaries from macOS builds
+            "!dist/bin/wsh-*-linux.*",    // Exclude Linux binaries from macOS builds
         ],
         category: "public.app-category.developer-tools",
         minimumSystemVersion: "10.15.0",
@@ -121,6 +123,11 @@ const config = {
     },
     linux: {
         artifactName: "${name}-${platform}-${arch}-${version}.${ext}",
+        // Linux-specific files: exclude cross-platform wsh binaries
+        files: [
+            "!dist/bin/wsh-*-windows.*",  // Exclude Windows binaries from Linux builds
+            "!dist/bin/wsh-*-darwin.*",   // Exclude macOS binaries from Linux builds
+        ],
         category: "TerminalEmulator",
         executableName: pkg.name,
         target: ["zip", "deb", "rpm", "snap", "AppImage", "pacman"],
@@ -141,6 +148,11 @@ const config = {
     },
     win: {
         target: ["nsis", "msi", "zip"],
+        // Windows-specific files: exclude cross-platform wsh binaries (~84MB savings)
+        files: [
+            "!dist/bin/wsh-*-darwin.*",  // Exclude macOS binaries from Windows builds
+            "!dist/bin/wsh-*-linux.*",   // Exclude Linux binaries from Windows builds
+        ],
         signtoolOptions: windowsShouldSign && {
             signingHashAlgorithms: ["sha256"],
             publisherName: "Command Line Inc",
