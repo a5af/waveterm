@@ -2,7 +2,7 @@
 
 This document tracks the version history of the a5af/waveterm fork.
 
-## Latest Version: 0.12.10-fork
+## Latest Version: 0.12.12-fork
 
 **Main Worktree:** `D:/Code/waveterm` (branch: `feature/high-contrast-terminal-borders`)
 **This Worktree:** `D:/Code/agent-workspaces/agentx/waveterm` (branch: `agentx/merge-upstream-v0.12.0`)
@@ -11,6 +11,16 @@ This document tracks the version history of the a5af/waveterm fork.
 ---
 
 ## Version History (Latest First)
+
+### v0.12.12-fork (2025-10-20)
+- **Location:** Main worktree (`D:/Code/waveterm`)
+- **Branch:** `feature/high-contrast-terminal-borders`
+- **Changes:**
+  - Package verification and version consistency fixes
+
+### v0.12.11-fork (2025-10-20)
+- **Changes:**
+  - Version management improvements and documentation
 
 ### v0.12.10-fork (2025-10-19)
 - **Location:** Main worktree (`D:/Code/waveterm`)
