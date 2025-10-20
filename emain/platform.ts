@@ -125,6 +125,9 @@ function findAvailableDataDirectory(): string {
     throw new Error("Too many Wave instances running (max 100)");
 }
 
+// For backward compatibility with old paths (legacy/environment variable overrides)
+const waveDirName = isDev ? "waveterm-dev" : "waveterm";
+
 // Find available data directory (portable mode - next to executable)
 const dataDirectory = findAvailableDataDirectory();
 const instanceNumber = path.basename(dataDirectory).includes("-")

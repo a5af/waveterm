@@ -228,4 +228,46 @@ describe("Portable Multi-Instance Logic", () => {
         createLockFile(staleDir, 999999);
         expect(isDirectoryLocked(staleDir)).toBe(false);
     });
+
+    it("should use portable directory next to executable", () => {
+        // This test verifies the main behavior:
+        // Data should be stored next to the executable, not in AppData
+        const result = findAvailableDataDirectory(testDir);
+
+        // Should be inside testDir (next to "executable")
+        expect(result.startsWith(testDir)).toBe(true);
+
+        // Should be wave-data or wave-data-N
+        const basename = path.basename(result);
+        expect(basename).toMatch(/^wave-data(-\d+)?$/);
+    });
+
+    it("should preserve settings across restarts", () => {
+        // Simulate: launch -> create settings -> close -> launch again
+
+        // First launch
+        const firstDataDir = findAvailableDataDirectory(testDir);
+        expect(firstDataDir).toBe(path.join(testDir, "wave-data"));
+
+        // Create some "settings"
+        fs.writeFileSync(path.join(firstDataDir, "settings.json"), '{"theme":"dark"}');
+
+        // Lock it (simulating running instance)
+        createLockFile(firstDataDir, process.pid);
+
+        // Second launch (while first is running)
+        const secondDataDir = findAvailableDataDirectory(testDir);
+        expect(secondDataDir).toBe(path.join(testDir, "wave-data-2"));
+
+        // Now "close" first instance by removing lock
+        fs.unlinkSync(path.join(firstDataDir, "wave.lock"));
+
+        // Third launch (after closing first)
+        const thirdDataDir = findAvailableDataDirectory(testDir);
+        expect(thirdDataDir).toBe(firstDataDir); // Reuses original
+
+        // Settings should still exist!
+        const settings = fs.readFileSync(path.join(thirdDataDir, "settings.json"), "utf-8");
+        expect(settings).toBe('{"theme":"dark"}');
+    });
 });
