@@ -363,7 +363,7 @@ func main() {
 		log.Printf("\n")
 		log.Printf("To run multiple instances simultaneously, launch with the --instance flag:\n")
 		log.Printf("  Example: Wave.exe --instance=test\n")
-		log.Printf("  Example: Wave.exe --instance=v0.12.2\n")
+		log.Printf("  Example: Wave.exe --instance=dev\n")
 		log.Printf("\n")
 		log.Printf("Each instance will have its own isolated data while sharing your settings.\n")
 		log.Printf("========================================\n")

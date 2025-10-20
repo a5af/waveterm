@@ -91,6 +91,44 @@ fi
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 info "Current version: $CURRENT_VERSION"
 
+# Check for uncommitted changes (except for package files which will be updated)
+echo ""
+echo -e "${CYAN}========================================${NC}"
+echo -e "${CYAN}⚠️  RELEASE WORKFLOW REMINDER${NC}"
+echo -e "${CYAN}========================================${NC}"
+echo ""
+echo "Before bumping version, ensure:"
+echo "  1. ✅ ALL bug fixes are committed"
+echo "  2. ✅ ALL tests pass (npm test)"
+echo "  3. ✅ Working tree is clean (no uncommitted changes)"
+echo ""
+echo "After bumping version:"
+echo "  1. ⚠️ DO NOT commit more fixes after bumping"
+echo "  2. ⚠️ Rebuild binaries: task build:backend"
+echo "  3. ⚠️ Build package before releasing"
+echo ""
+echo "See RELEASE_CHECKLIST.md for full workflow."
+echo ""
+if git diff-index --quiet HEAD -- ':!package.json' ':!package-lock.json' 2>/dev/null; then
+    success "Working tree is clean (ignoring package files)"
+else
+    echo -e "${RED}✗ WARNING: You have uncommitted changes!${NC}"
+    echo ""
+    git status --short | grep -v "package"
+    echo ""
+    echo -e "${RED}It is recommended to commit all changes before bumping version.${NC}"
+    echo -e "${RED}This prevents releasing old code under a new version number.${NC}"
+    echo ""
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        error "Aborted"
+        exit 1
+    fi
+fi
+echo -e "${CYAN}========================================${NC}"
+echo ""
+
 # Determine new version
 if [[ "$TYPE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     # Specific version provided

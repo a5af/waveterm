@@ -131,9 +131,8 @@ const waveConfigDirName = waveDirName; // Config uses same directory name
 
 // Find available data directory (portable mode - next to executable)
 const dataDirectory = findAvailableDataDirectory();
-const instanceNumber = path.basename(dataDirectory).includes("-")
-    ? path.basename(dataDirectory).split("-")[2]
-    : "1";
+const baseNameParts = path.basename(dataDirectory).split("-");
+const instanceNumber = baseNameParts.length > 2 ? baseNameParts[2] : "1";
 
 // Set app name to include instance number
 const version = packageJson.version;

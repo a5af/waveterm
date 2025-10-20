@@ -11,10 +11,18 @@ const windowsShouldSign = !!process.env.SM_CODE_SIGNING_CERT_SHA1_HASH;
  */
 function verifyRequiredArtifacts() {
     const version = pkg.version;
+
+    // CRITICAL: All these files MUST exist before packaging
+    // Missing any of these will cause runtime failures
     const requiredFiles = [
-        "dist/main/index.js",
-        "dist/bin/wavesrv.x64.exe", // Windows wavesrv
-        `dist/bin/wsh-${version}-windows.x64.exe`, // Windows wsh (versioned)
+        // Frontend
+        "dist/main/index.js",           // Main process entry point
+        "dist/frontend/index.html",     // Frontend UI
+
+        // Backend binaries (versioned for correct shell integration)
+        "dist/bin/wavesrv.x64.exe",                    // Backend server
+        `dist/bin/wsh-${version}-windows.x64.exe`,     // Shell integration (x64) - REQUIRED for PowerShell
+        `dist/bin/wsh-${version}-windows.arm64.exe`,   // Shell integration (ARM64)
     ];
 
     const missingFiles = [];
@@ -31,14 +39,20 @@ function verifyRequiredArtifacts() {
 Missing files:
 ${missingFiles.map((f) => `  - ${f}`).join("\n")}
 
+CRITICAL: wsh binaries MUST match package.json version (${version})
+Without versioned wsh, shell integration will fail with "wsh not found" errors.
+
 Before packaging, you must:
 1. Build the frontend: npm run build:prod
-2. Build the Go binaries: task build (or go build the wavesrv/wsh binaries)
+2. Build the Go binaries: task build:backend
+3. Verify versions match: bash scripts/verify-version.sh
 
 The package cannot be created without these critical files.
 `;
         throw new Error(errorMsg);
     }
+
+    console.log("✓ All required artifacts present for version", version);
 }
 
 // Run verification before configuration is used
@@ -63,15 +77,12 @@ const config = {
         // Exclude unnecessary locale files to reduce build size (~35-40MB savings)
         "!**/locales/**/*",
         "**/locales/en-US.pak", // Only include English locale
-        // Exclude cross-platform wsh binaries to reduce build size (~84MB savings)
-        "!dist/bin/wsh-*-darwin.*",
-        "!dist/bin/wsh-*-linux.*",
     ],
     directories: {
         output: "make",
     },
     asarUnpack: [
-        "dist/bin/**/*", // wavesrv and wsh binaries (Windows only after filtering)
+        "dist/bin/**/*", // wavesrv and wsh binaries (platform-specific after filtering)
         "dist/docsite/**/*", // the static docsite
     ],
     mac: {
@@ -84,6 +95,11 @@ const config = {
                 target: "dmg",
                 arch: ["arm64", "x64"],
             },
+        ],
+        // macOS-specific files: exclude cross-platform wsh binaries
+        files: [
+            "!dist/bin/wsh-*-windows.*",  // Exclude Windows binaries from macOS builds
+            "!dist/bin/wsh-*-linux.*",    // Exclude Linux binaries from macOS builds
         ],
         category: "public.app-category.developer-tools",
         minimumSystemVersion: "10.15.0",
@@ -107,6 +123,11 @@ const config = {
     },
     linux: {
         artifactName: "${name}-${platform}-${arch}-${version}.${ext}",
+        // Linux-specific files: exclude cross-platform wsh binaries
+        files: [
+            "!dist/bin/wsh-*-windows.*",  // Exclude Windows binaries from Linux builds
+            "!dist/bin/wsh-*-darwin.*",   // Exclude macOS binaries from Linux builds
+        ],
         category: "TerminalEmulator",
         executableName: pkg.name,
         target: ["zip", "deb", "rpm", "snap", "AppImage", "pacman"],
@@ -127,6 +148,11 @@ const config = {
     },
     win: {
         target: ["nsis", "msi", "zip"],
+        // Windows-specific files: exclude cross-platform wsh binaries (~84MB savings)
+        files: [
+            "!dist/bin/wsh-*-darwin.*",  // Exclude macOS binaries from Windows builds
+            "!dist/bin/wsh-*-linux.*",   // Exclude Linux binaries from Windows builds
+        ],
         signtoolOptions: windowsShouldSign && {
             signingHashAlgorithms: ["sha256"],
             publisherName: "Command Line Inc",

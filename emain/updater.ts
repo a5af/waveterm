@@ -211,7 +211,11 @@ export function getResolvedUpdateChannel(): string {
     return isDev() ? "dev" : (autoUpdater.channel ?? "latest");
 }
 
-ipcMain.on("install-app-update", () => fireAndForget(updater?.promptToInstallUpdate.bind(updater)));
+ipcMain.on("install-app-update", () => {
+    if (updater) {
+        fireAndForget(updater.promptToInstallUpdate.bind(updater));
+    }
+});
 ipcMain.on("get-app-update-status", (event) => {
     event.returnValue = updater?.status;
 });

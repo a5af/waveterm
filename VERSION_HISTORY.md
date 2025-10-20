@@ -2,7 +2,7 @@
 
 This document tracks the version history of the a5af/waveterm fork.
 
-## Latest Version: 0.12.10-fork
+## Latest Version: 0.12.14-fork
 
 **Main Worktree:** `D:/Code/waveterm` (branch: `feature/high-contrast-terminal-borders`)
 **This Worktree:** `D:/Code/agent-workspaces/agentx/waveterm` (branch: `agentx/merge-upstream-v0.12.0`)
@@ -11,6 +11,38 @@ This document tracks the version history of the a5af/waveterm fork.
 ---
 
 ## Version History (Latest First)
+
+### v0.12.14-fork (2025-10-20)
+- **Location:** Main worktree (`D:/Code/waveterm`)
+- **Branch:** `feature/high-contrast-terminal-borders`
+- **Agent:** agentx
+- **Changes:**
+  - **P0 FIX:** Cross-platform wsh binary exclusions (breaks macOS/Linux builds)
+  - **P1 FIX:** Updater IPC handler crash when auto-update disabled
+  - Added RELEASE_CHECKLIST.md with comprehensive workflow guide
+  - Enhanced bump-version.sh to prevent releasing old code
+  - Documented correct release workflow to prevent v0.12.13 issue recurrence
+
+### v0.12.13-fork (2025-10-20)
+- **Location:** Main worktree (`D:/Code/waveterm`)
+- **Branch:** `feature/high-contrast-terminal-borders`
+- **Agent:** agentx
+- **Changes:**
+  - Fix title bar instance number parsing bug (was showing "undefined")
+  - Add comprehensive app name and instance tests
+  - **NOTE:** This version was released BEFORE instance parsing fix was committed
+  - **ISSUE:** Users downloaded old code under new version number
+  - **RESOLUTION:** v0.12.14 includes all fixes with corrected workflow
+
+### v0.12.12-fork (2025-10-20)
+- **Location:** Main worktree (`D:/Code/waveterm`)
+- **Branch:** `feature/high-contrast-terminal-borders`
+- **Changes:**
+  - Package verification and version consistency fixes
+
+### v0.12.11-fork (2025-10-20)
+- **Changes:**
+  - Version management improvements and documentation
 
 ### v0.12.10-fork (2025-10-19)
 - **Location:** Main worktree (`D:/Code/waveterm`)

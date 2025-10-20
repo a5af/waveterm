@@ -15,7 +15,9 @@ import { FakeChat } from "./fakechat";
 import { EditBashrcCommand, ViewLogoCommand, ViewShortcutsCommand } from "./onboarding-command";
 import { FakeLayout } from "./onboarding-layout";
 
-export const CurrentOnboardingVersion = "v0.12.0";
+import packageJson from "../../../package.json";
+
+export const CurrentOnboardingVersion = `v${packageJson.version}`;
 
 type FeaturePageName = "waveai" | "magnify" | "files";
 
